@@ -1,12 +1,12 @@
 use nom::{
     character::complete::{alphanumeric1, char, multispace0},
-    error::VerboseError,
+    error::{VerboseError, VerboseErrorKind},
 };
 use std::collections::HashMap;
 
 use crate::{
     environment::EnvironmentHeader, nom_utility::IResultV,
-    parser::environment_parameter::parse_environment_parameter,
+    parser::command_parameter::parse_command_parameter, verror,
 };
 
 pub fn parse_environment_header(str: &str) -> IResultV<&str, EnvironmentHeader> {
@@ -16,13 +16,18 @@ pub fn parse_environment_header(str: &str) -> IResultV<&str, EnvironmentHeader> 
     let (str, parameters) = match char::<&str, VerboseError<&str>>('[')(str) {
         Ok((mut str, _)) => {
             let mut result = HashMap::new();
+
             loop {
-                let tmp = parse_environment_parameter(str)?;
-                str = tmp.0;
+                let tmp = parse_command_parameter(str)?;
                 let (key, value) = tmp.1;
                 if result.contains_key(&key) {
-                    panic!();
+                    return Err(verror!(
+                        "parse_environment_header",
+                        str,
+                        "duplicate parameter"
+                    ));
                 }
+                str = tmp.0;
                 result.insert(key, value);
 
                 str = multispace0(str)?.0;
@@ -60,7 +65,7 @@ pub fn parse_environment_header(str: &str) -> IResultV<&str, EnvironmentHeader> 
 #[cfg(test)]
 mod tests {
     use crate::{
-        environment::{EnvironmentHeader, EnvironmentParameterValue::*, NumberUnit},
+        environment::{CommandParameterValue::*, EnvironmentHeader, NumberUnit},
         param,
         parser::environment_header::parse_environment_header,
     };

@@ -5,12 +5,12 @@ use nom::{
 };
 
 use crate::{
-    environment::{EnvironmentParameterValue, NumberUnit},
+    environment::{CommandParameterValue, NumberUnit},
     nom_utility::{namestr, parse_f64, ws, IResultV},
 };
 
-impl EnvironmentParameterValue {
-    fn parse_string(str: &str) -> IResultV<&str, EnvironmentParameterValue> {
+impl CommandParameterValue {
+    fn parse_string(str: &str) -> IResultV<&str, CommandParameterValue> {
         let (str, delimiter) = alt((char('"'), char('\''), char('`')))(str)?;
 
         let mut value = String::new();
@@ -37,17 +37,14 @@ impl EnvironmentParameterValue {
                 }
             }
         }
-        Ok((str, EnvironmentParameterValue::String(value)))
+        Ok((str, CommandParameterValue::String(value)))
     }
 
-    fn parse_number(str: &str) -> IResultV<&str, EnvironmentParameterValue> {
+    fn parse_number(str: &str) -> IResultV<&str, CommandParameterValue> {
         let (str, value) = parse_f64(str)?;
         match Self::parse_number_unit(str) {
-            Ok((str, unit)) => Ok((str, EnvironmentParameterValue::Number(unit, value))),
-            Err(_) => Ok((
-                str,
-                EnvironmentParameterValue::Number(NumberUnit::None, value),
-            )),
+            Ok((str, unit)) => Ok((str, CommandParameterValue::Number(unit, value))),
+            Err(_) => Ok((str, CommandParameterValue::Number(NumberUnit::None, value))),
         }
     }
 
@@ -63,23 +60,21 @@ impl EnvironmentParameterValue {
         ))
     }
 
-    fn parse_some(str: &str) -> IResultV<&str, EnvironmentParameterValue> {
+    fn parse_some(str: &str) -> IResultV<&str, CommandParameterValue> {
         alt((
-            EnvironmentParameterValue::parse_string,
-            EnvironmentParameterValue::parse_number,
+            CommandParameterValue::parse_string,
+            CommandParameterValue::parse_number,
         ))(str)
     }
 }
 
-pub fn parse_environment_parameter(
-    str: &str,
-) -> IResultV<&str, (String, EnvironmentParameterValue)> {
-    match EnvironmentParameterValue::parse_some(str) {
+pub fn parse_command_parameter(str: &str) -> IResultV<&str, (String, CommandParameterValue)> {
+    match CommandParameterValue::parse_some(str) {
         Ok((str, value)) => Ok((str, ("".to_string(), value))),
         Err(_) => {
             let (str, key) = namestr(str)?;
             let (str, _) = ws(char('='))(str)?;
-            let (str, value) = EnvironmentParameterValue::parse_some(str)?;
+            let (str, value) = CommandParameterValue::parse_some(str)?;
             Ok((str, (key, value)))
         }
     }
@@ -89,10 +84,10 @@ pub fn parse_environment_parameter(
 mod tests {
     use crate::{
         environment::{
-            EnvironmentParameterValue::{self, *},
+            CommandParameterValue::{self, *},
             NumberUnit,
         },
-        parser::environment_parameter::parse_environment_parameter,
+        parser::command_parameter::parse_command_parameter,
     };
 
     #[macro_export]
@@ -102,7 +97,7 @@ mod tests {
         };
     }
 
-    impl PartialEq for EnvironmentParameterValue {
+    impl PartialEq for CommandParameterValue {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
                 (Self::String(l0), Self::String(r0)) => l0 == r0,
@@ -115,22 +110,22 @@ mod tests {
     #[test]
     fn test() {
         assert_eq!(
-            parse_environment_parameter("number = 1"),
+            parse_command_parameter("number = 1"),
             Ok(("", param!("number" => Number(NumberUnit::None, 1.0))))
         );
 
         assert_eq!(
-            parse_environment_parameter("pixel = -1.2px"),
+            parse_command_parameter("pixel = -1.2px"),
             Ok(("", param!("pixel" => Number(NumberUnit::Px, -1.2))))
         );
 
         assert_eq!(
-            parse_environment_parameter("hw = 'Hello, world!'"),
+            parse_command_parameter("hw = 'Hello, world!'"),
             Ok(("", param!("hw" => String("Hello, world!".to_string()))))
         );
 
         assert_eq!(
-            parse_environment_parameter("konnnitiha = \"こんにちは。\\\\ \\\"Hello\\\" \\\\\""),
+            parse_command_parameter("konnnitiha = \"こんにちは。\\\\ \\\"Hello\\\" \\\\\""),
             Ok((
                 "",
                 param!("konnnitiha" => String("こんにちは。\\ \"Hello\" \\".to_string()))

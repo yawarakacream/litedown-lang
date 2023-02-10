@@ -62,3 +62,19 @@ pub fn parse_f64<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
         |x: &str| x.parse().unwrap(),
     )(input)
 }
+
+#[macro_export]
+macro_rules! verror {
+    // return Err(nom::Err::Error(VerboseError {
+    //     errors: vec![(str, VerboseErrorKind::Context("aaa"))],
+    // }));
+    // return context("duplicate parameter", fail)(str);
+    ($caller:expr, $input:expr, $cause:expr) => {
+        nom::Err::Error(VerboseError {
+            errors: vec![(
+                $input,
+                VerboseErrorKind::Context(concat!($caller, " (", $cause, ")")),
+            )],
+        })
+    };
+}
