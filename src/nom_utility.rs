@@ -1,10 +1,11 @@
 use nom::{
     branch::alt,
     bytes::complete::take_while1,
-    character::complete::{alpha1, char, digit1, multispace0},
-    combinator::{map, opt, recognize},
+    character::complete::{alpha1, anychar, char, digit1, line_ending, space0},
+    combinator::{eof, map, opt, recognize},
     error::{ParseError, VerboseError},
-    sequence::{delimited, pair, tuple},
+    multi::many_till,
+    sequence::{delimited, pair, terminated, tuple},
     AsChar, Finish, IResult, IResult as NomIResult,
 };
 
@@ -35,7 +36,7 @@ pub fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(
 where
     F: Fn(&'a str) -> IResult<&'a str, O, E>,
 {
-    delimited(multispace0, inner, multispace0)
+    delimited(space0, inner, space0)
 }
 
 pub fn namestr<'a, E: ParseError<&'a str>>(str: &'a str) -> IResult<&'a str, String, E> {
@@ -63,6 +64,39 @@ pub fn parse_f64<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str,
     )(input)
 }
 
+pub fn pass_blank_line(str: &str) -> IResultV<&str, usize> {
+    map(terminated(space0, line_ending), |s: &str| s.len())(str)
+}
+
+pub fn pass_blank_lines0(str: &str) -> IResultV<&str, usize> {
+    let mut str = str;
+    let mut i = 0;
+    loop {
+        match pass_blank_line(str) {
+            Ok(tmp) => {
+                str = tmp.0;
+                i += 1;
+            }
+            Err(_) => break,
+        }
+    }
+    return Ok((str, i));
+}
+
+pub fn any_to_line_ending(str: &str) -> IResultV<&str, String> {
+    map(
+        many_till(
+            anychar,
+            alt((eof::<&str, VerboseError<&str>>, alt((line_ending, eof)))),
+        ),
+        |(v, _)| (v.into_iter().collect()),
+    )(str)
+}
+
+pub fn count_indent(str: &str) -> IResultV<&str, usize> {
+    map(space0, |str: &str| str.len())(str)
+}
+
 #[macro_export]
 macro_rules! verror {
     // return Err(nom::Err::Error(VerboseError {
@@ -70,10 +104,10 @@ macro_rules! verror {
     // }));
     // return context("duplicate parameter", fail)(str);
     ($caller:expr, $input:expr, $cause:expr) => {
-        nom::Err::Error(VerboseError {
+        nom::Err::Error(nom::error::VerboseError {
             errors: vec![(
                 $input,
-                VerboseErrorKind::Context(concat!($caller, " (", $cause, ")")),
+                nom::error::VerboseErrorKind::Context(concat!($caller, " (", $cause, ")")),
             )],
         })
     };

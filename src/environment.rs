@@ -1,5 +1,20 @@
 use std::collections::HashMap;
 
+#[derive(Debug)]
+pub enum Element {
+    Environment {
+        name: String,
+        parameters: HashMap<String, CommandParameterValue>,
+        children: Vec<Element>,
+    },
+    Function {
+        name: String,
+        parameters: HashMap<String, CommandParameterValue>,
+        body: Option<String>,
+    },
+    Text(Vec<String>),
+}
+
 #[derive(PartialEq, Eq, Debug)]
 pub enum NumberUnit {
     None,
@@ -7,17 +22,8 @@ pub enum NumberUnit {
     Em,
 }
 
-pub enum Element {
-    Environment {
-        name: String,
-        parameters: HashMap<String, EnvironmentParameterValue>,
-        children: Box<Vec<Element>>,
-    },
-    Text(String),
-}
-
 #[derive(Debug)]
-pub enum EnvironmentParameterValue {
+pub enum CommandParameterValue {
     String(String),
     Number(NumberUnit, f64),
 }
@@ -25,5 +31,5 @@ pub enum EnvironmentParameterValue {
 #[derive(Debug)]
 pub struct EnvironmentHeader {
     pub name: String,
-    pub parameters: HashMap<String, EnvironmentParameterValue>,
+    pub parameters: HashMap<String, CommandParameterValue>,
 }
