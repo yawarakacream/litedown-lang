@@ -6,8 +6,8 @@ use nom::{
 
 use crate::{
     environment::Element,
-    nom_utility::{any_to_line_ending, count_indent, pass_blank_lines0, IResultV},
     parser::{environment_header::parse_environment_header, passage_line::parse_passage_line},
+    utility::nom::{any_to_line_ending, count_indent, pass_blank_lines0, IResultV},
     verror,
 };
 

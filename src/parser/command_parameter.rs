@@ -6,7 +6,7 @@ use nom::{
 
 use crate::{
     environment::{CommandParameterValue, NumberUnit},
-    nom_utility::{namestr, parse_f64, ws, IResultV},
+    utility::nom::{namestr, parse_f64, ws, IResultV},
 };
 
 impl CommandParameterValue {

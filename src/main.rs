@@ -1,14 +1,14 @@
 pub mod environment;
-pub mod nom_utility;
 pub mod parser;
+pub mod utility;
 
 use std::{env, fs};
 
-use nom_utility::print_nom;
 use parser::{
     environment::parse_environment, environment_header::parse_environment_header,
     passage_line::parse_passage_line,
 };
+use utility::nom::print_nom;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -84,7 +84,10 @@ fn main() {
         // let output_path = "./demo/demo.html";
 
         let source_code = fs::read_to_string(&source_path).unwrap();
-        print_nom(&source_code, parse_environment(0))
+        let ret = print_nom(&source_code, parse_environment(0));
+        if let Some(env) = ret {
+            println!("{}", env.stringify_as_tree().unwrap());
+        }
     } else {
         println!("Too many arguments");
     }

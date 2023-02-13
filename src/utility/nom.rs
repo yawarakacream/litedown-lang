@@ -13,20 +13,23 @@ pub type IResultV<I, O> = NomIResult<I, O, VerboseError<I>>;
 pub fn print_nom<'a, O: std::fmt::Debug, F: nom::Parser<&'a str, O, VerboseError<&'a str>>>(
     input: &'a str,
     mut parser: F,
-) {
+) -> Option<O> {
     eprintln!("\x1B[42minput: {:?}\x1B[0m", input);
     let result = parser.parse(input).finish();
+    let mut ret = None;
     match result {
         Ok((_, a)) => {
             eprintln!("\x1B[42mOK!\x1B[0m");
-            eprintln!("{:?}", a);
+            eprintln!("{a:?}");
+            ret = Some(a);
         }
         Err(err) => {
             eprintln!("\x1B[41mError!\x1B[0m");
-            eprintln!("{}", nom::error::convert_error(input, err));
+            eprintln!("{}", nom::error::convert_error(input, err.clone()));
         }
-    }
+    };
     eprintln!();
+    ret
 }
 
 pub fn is_whitespace(c: char) -> bool {

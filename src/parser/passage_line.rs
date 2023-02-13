@@ -8,8 +8,8 @@ use nom::{
 
 use crate::{
     environment::{Line, LineContent},
-    nom_utility::{is_whitespace, namestr, IResultV},
     parser::command_parameter::parse_command_parameter,
+    utility::nom::{is_whitespace, namestr, IResultV},
     verror,
 };
 

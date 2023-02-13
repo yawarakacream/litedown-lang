@@ -7,8 +7,8 @@ use nom::{
 
 use crate::{
     environment::EnvironmentHeader,
-    nom_utility::{count_indent, namestr, pass_blank_lines0, IResultV},
     parser::command_parameter::parse_command_parameter,
+    utility::nom::{count_indent, namestr, pass_blank_lines0, IResultV},
     verror,
 };
 
