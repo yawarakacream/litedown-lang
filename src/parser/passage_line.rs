@@ -9,7 +9,7 @@ use nom::{
 use crate::{
     environment::{Line, LineContent},
     parser::command_parameter::parse_command_parameter,
-    utility::nom::{is_whitespace, namestr, IResultV},
+    utility::nom::{namestr, IResultV},
     verror,
 };
 
@@ -40,9 +40,7 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Line> {
 
         if c == '@' {
             if !text_buffer.is_empty() {
-                ret.push(LineContent::Text(
-                    text_buffer.trim_end_matches(is_whitespace).to_string(),
-                ));
+                ret.push(LineContent::Text(text_buffer));
                 text_buffer = String::new();
             }
 
@@ -115,8 +113,6 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Line> {
                 }
                 Err(_) => None,
             };
-
-            str = space0(str)?.0;
 
             ret.push(LineContent::Function {
                 name,
