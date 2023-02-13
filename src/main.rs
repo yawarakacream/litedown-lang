@@ -5,7 +5,10 @@ pub mod parser;
 use std::{env, fs};
 
 use nom_utility::print_nom;
-use parser::{environment::parse_environment, environment_header::parse_environment_header};
+use parser::{
+    environment::parse_environment, environment_header::parse_environment_header,
+    passage_line::parse_passage_line,
+};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -73,6 +76,8 @@ fn main() {
      ",
             parse_environment(0),
         );
+
+        print_nom("left @func{body} right", parse_passage_line);
     } else if args.len() == 2 {
         let source_path = &args[1];
         println!("Parsing {}", source_path);

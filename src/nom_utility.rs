@@ -1,10 +1,9 @@
 use nom::{
     branch::alt,
-    bytes::complete::take_while1,
-    character::complete::{alpha1, anychar, char, digit1, line_ending, space0},
+    bytes::complete::{is_not, take_while1},
+    character::complete::{alpha1, char, digit1, line_ending, space0},
     combinator::{eof, map, opt, recognize},
     error::{ParseError, VerboseError},
-    multi::many_till,
     sequence::{delimited, pair, terminated, tuple},
     AsChar, Finish, IResult, IResult as NomIResult,
 };
@@ -28,6 +27,10 @@ pub fn print_nom<'a, O: std::fmt::Debug, F: nom::Parser<&'a str, O, VerboseError
         }
     }
     eprintln!();
+}
+
+pub fn is_whitespace(c: char) -> bool {
+    c == ' ' || c == '\t'
 }
 
 pub fn ws<'a, F: 'a, O, E: ParseError<&'a str>>(
@@ -83,14 +86,17 @@ pub fn pass_blank_lines0(str: &str) -> IResultV<&str, usize> {
     return Ok((str, i));
 }
 
-pub fn any_to_line_ending(str: &str) -> IResultV<&str, String> {
-    map(
-        many_till(
-            anychar,
-            alt((eof::<&str, VerboseError<&str>>, alt((line_ending, eof)))),
-        ),
-        |(v, _)| (v.into_iter().collect()),
-    )(str)
+pub fn any_to_line_ending(str: &str) -> IResultV<&str, &str> {
+    // map(
+    //     many_till(
+    //         anychar,
+    //         alt((eof::<&str, VerboseError<&str>>, alt((line_ending, eof)))),
+    //     ),
+    //     |(v, _)| (v.into_iter().collect()),
+    // )(str)
+    let (str, res) = is_not("\r\n")(str)?;
+    let (str, _) = alt((line_ending, eof))(str)?;
+    Ok((str, res))
 }
 
 pub fn count_indent(str: &str) -> IResultV<&str, usize> {

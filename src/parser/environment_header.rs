@@ -1,8 +1,9 @@
+use std::collections::HashMap;
+
 use nom::{
     character::complete::{char, line_ending, space0},
     error::VerboseError,
 };
-use std::collections::HashMap;
 
 use crate::{
     environment::EnvironmentHeader,
@@ -46,14 +47,14 @@ pub fn parse_environment_header(
 
         let (str, parameters) = match char::<&str, VerboseError<&str>>('[')(str) {
             Ok((mut str, _)) => {
-                let mut result = HashMap::new();
+                let mut parameters = HashMap::new();
 
                 loop {
                     str = pass_spaces_in_environment_header(indent, str)?.0;
 
                     let tmp = parse_command_parameter(str)?;
                     let (key, value) = tmp.1;
-                    if result.contains_key(&key) {
+                    if parameters.contains_key(&key) {
                         return Err(verror!(
                             "parse_environment_header",
                             str,
@@ -61,7 +62,7 @@ pub fn parse_environment_header(
                         ));
                     }
                     str = tmp.0;
-                    result.insert(key, value);
+                    parameters.insert(key, value);
 
                     str = space0(str)?.0;
 
@@ -81,7 +82,7 @@ pub fn parse_environment_header(
                     }
                 }
 
-                (str, result)
+                (str, parameters)
             }
             Err(_) => (str, HashMap::new()),
         };
@@ -99,16 +100,10 @@ pub fn parse_environment_header(
 #[cfg(test)]
 mod tests {
     use crate::{
+        command_params,
         environment::{CommandParameterValue::*, EnvironmentHeader, NumberUnit},
-        param,
         parser::environment_header::parse_environment_header,
     };
-
-    macro_rules! params {
-        ($($name:expr => $value:expr),*) => {
-            vec![ $( param!($name => $value), )* ].into_iter().collect()
-        };
-    }
 
     impl PartialEq for EnvironmentHeader {
         fn eq(&self, other: &Self) -> bool {
@@ -124,9 +119,9 @@ mod tests {
                 "",
                 EnvironmentHeader {
                     name: "headername".to_string(),
-                    parameters: params![
+                    parameters: command_params! {
                         "" => Number(NumberUnit::None, 2.4)
-                    ]
+                    }
                 }
             ))
         );
@@ -139,12 +134,12 @@ mod tests {
                 "",
                 EnvironmentHeader {
                     name: "headername".to_string(),
-                    parameters: params![
+                    parameters: command_params! {
                         "string" => String("aa\"あ".to_string()),
                         "number" => Number(NumberUnit::None, 1.1),
                         "pixel" => Number(NumberUnit::Px, 5.0),
                         "M" => Number(NumberUnit::Em, -7.8)
-                    ]
+                    }
                 }
             ))
         );
@@ -160,10 +155,10 @@ mod tests {
                 "",
                 EnvironmentHeader {
                     name: "name".to_string(),
-                    parameters: params![
+                    parameters: command_params! {
                         "aiueo" => String("あいうえお".to_string()),
                         "iti_ni" => Number(NumberUnit::None, 12.0)
-                    ]
+                    }
                 }
             ))
         )

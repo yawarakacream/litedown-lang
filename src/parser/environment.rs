@@ -7,7 +7,7 @@ use nom::{
 use crate::{
     environment::Element,
     nom_utility::{any_to_line_ending, count_indent, pass_blank_lines0, IResultV},
-    parser::environment_header::parse_environment_header,
+    parser::{environment_header::parse_environment_header, passage_line::parse_passage_line},
     verror,
 };
 
@@ -49,7 +49,7 @@ pub fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&str, El
                     match parse_environment(children_indent)(str) {
                         Ok(tmp) => {
                             if !buffer.is_empty() {
-                                children.push(Element::Text(buffer));
+                                children.push(Element::Passage(buffer));
                                 buffer = Vec::new();
                             }
                             str = tmp.0;
@@ -57,7 +57,7 @@ pub fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&str, El
                         }
                         Err(_) => {
                             if tmp.1 > 0 && !buffer.is_empty() {
-                                children.push(Element::Text(buffer));
+                                children.push(Element::Passage(buffer));
                                 buffer = Vec::new();
                             }
 
@@ -79,13 +79,15 @@ pub fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&str, El
 
                             let tmp = any_to_line_ending(str)?;
                             str = tmp.0;
-                            assert!(tmp.1.len() > 0);
-                            buffer.push(tmp.1);
+                            let line = tmp.1;
+                            assert!(line.len() > 0);
+                            let (_, line) = parse_passage_line(&line)?;
+                            buffer.push(line);
                         }
                     }
                 }
                 if !buffer.is_empty() {
-                    children.push(Element::Text(buffer));
+                    children.push(Element::Passage(buffer));
                 }
                 str
             }
@@ -98,9 +100,10 @@ pub fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&str, El
                     return Err(verror!("parse_environment", str, "no children"));
                 }
 
-                let (str, child) = any_to_line_ending(str)?;
+                let (str, line) = any_to_line_ending(str)?;
+                let (_, line) = parse_passage_line(&line)?;
 
-                children.push(Element::Text(vec![child]));
+                children.push(Element::Passage(vec![line]));
                 str
             }
         };

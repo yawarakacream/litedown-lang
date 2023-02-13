@@ -91,9 +91,16 @@ mod tests {
     };
 
     #[macro_export]
-    macro_rules! param {
+    macro_rules! command_param {
         ($name:expr => $value:expr) => {
             ($name.to_string(), $value)
+        };
+    }
+
+    #[macro_export]
+    macro_rules! command_params {
+        ($($name:expr => $value:expr),*) => {
+            vec![ $( crate::command_param!($name => $value), )* ].into_iter().collect()
         };
     }
 
@@ -111,24 +118,30 @@ mod tests {
     fn test() {
         assert_eq!(
             parse_command_parameter("number = 1"),
-            Ok(("", param!("number" => Number(NumberUnit::None, 1.0))))
+            Ok((
+                "",
+                command_param!("number" => Number(NumberUnit::None, 1.0))
+            ))
         );
 
         assert_eq!(
             parse_command_parameter("pixel = -1.2px"),
-            Ok(("", param!("pixel" => Number(NumberUnit::Px, -1.2))))
+            Ok(("", command_param!("pixel" => Number(NumberUnit::Px, -1.2))))
         );
 
         assert_eq!(
             parse_command_parameter("hw = 'Hello, world!'"),
-            Ok(("", param!("hw" => String("Hello, world!".to_string()))))
+            Ok((
+                "",
+                command_param!("hw" => String("Hello, world!".to_string()))
+            ))
         );
 
         assert_eq!(
             parse_command_parameter("konnnitiha = \"こんにちは。\\\\ \\\"Hello\\\" \\\\\""),
             Ok((
                 "",
-                param!("konnnitiha" => String("こんにちは。\\ \"Hello\" \\".to_string()))
+                command_param!("konnnitiha" => String("こんにちは。\\ \"Hello\" \\".to_string()))
             ))
         )
     }

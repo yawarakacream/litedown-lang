@@ -7,12 +7,19 @@ pub enum Element {
         parameters: HashMap<String, CommandParameterValue>,
         children: Vec<Element>,
     },
+    Passage(Vec<Line>),
+}
+
+pub type Line = Vec<LineContent>;
+
+#[derive(Debug)]
+pub enum LineContent {
+    Text(String),
     Function {
         name: String,
         parameters: HashMap<String, CommandParameterValue>,
         body: Option<String>,
     },
-    Text(Vec<String>),
 }
 
 #[derive(PartialEq, Eq, Debug)]
