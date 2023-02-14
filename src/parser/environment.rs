@@ -22,19 +22,13 @@ pub fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&str, El
         let str = match line_ending::<&str, VerboseError<&str>>(str) {
             // multi lines
             Ok((str, _)) => {
-                println!("block");
-
                 let (str, _) = pass_blank_lines0(str)?;
 
                 if let Ok(_) = eof::<&str, VerboseError<&str>>(str) {
                     return Err(verror!("parse_environment", str, "no children"));
                 }
 
-                println!("blank lines passed: {:?}", str);
-
                 let (_, children_indent) = count_indent(str)?;
-
-                println!("children indent: {}", children_indent);
 
                 if children_indent <= indent {
                     return Err(verror!("parse_environment", str, "invalid indent"));
@@ -94,8 +88,6 @@ pub fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&str, El
 
             // inline
             Err(_) => {
-                println!("inline");
-
                 if let Ok((str, _)) = eof::<&str, VerboseError<&str>>(str) {
                     return Err(verror!("parse_environment", str, "no children"));
                 }
