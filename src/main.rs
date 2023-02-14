@@ -84,10 +84,14 @@ fn main() {
         // let output_path = "./demo/demo.html";
 
         let source_code = fs::read_to_string(&source_path).unwrap();
-        let ret = print_nom(&source_code, parse_environment(0));
-        if let Some(env) = ret {
-            println!("{}", env.stringify_as_tree().unwrap());
-        }
+
+        // let ret = print_nom(&source_code, parse_environment(0));
+        // if let Some(env) = ret {
+        //     println!("{}", env.stringify_as_tree().unwrap());
+        // }
+
+        let (_, env) = parse_environment(0)(&source_code).unwrap();
+        println!("{}", env.stringify_as_tree().unwrap());
     } else {
         println!("Too many arguments");
     }
