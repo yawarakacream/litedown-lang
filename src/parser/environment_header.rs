@@ -6,7 +6,7 @@ use nom::{
 };
 
 use crate::{
-    environment::EnvironmentHeader,
+    litedown_element::EnvironmentHeader,
     parser::command_parameter::parse_command_parameter,
     utility::nom::{count_indent, namestr, pass_blank_lines0, IResultV},
     verror,
@@ -101,7 +101,7 @@ pub fn parse_environment_header(
 mod tests {
     use crate::{
         command_params,
-        environment::{CommandParameterValue::*, EnvironmentHeader, NumberUnit},
+        litedown_element::{CommandParameterValue::*, EnvironmentHeader, NumberUnit},
         parser::environment_header::parse_environment_header,
     };
 

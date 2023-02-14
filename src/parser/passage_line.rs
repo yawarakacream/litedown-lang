@@ -7,7 +7,7 @@ use nom::{
 };
 
 use crate::{
-    environment::{Line, LineContent},
+    litedown_element::{Line, LineContent},
     parser::command_parameter::parse_command_parameter,
     utility::nom::{namestr, IResultV},
     verror,
@@ -131,7 +131,7 @@ mod tests {
 
     use crate::{
         command_params,
-        environment::{CommandParameterValue::*, LineContent, NumberUnit},
+        litedown_element::{CommandParameterValue::*, LineContent, NumberUnit},
         parser::passage_line::parse_passage_line,
     };
 

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, error::Error};
 
 use crate::utility::tree_string_builder::TreeStringBuilder;
 
@@ -44,7 +44,7 @@ pub struct EnvironmentHeader {
 }
 
 impl Element {
-    pub fn stringify_as_tree(&self) -> Result<String, Box<dyn std::error::Error>> {
+    pub fn stringify_as_tree(&self) -> Result<String, Box<dyn Error>> {
         let mut builder = TreeStringBuilder::new();
         self.stringify_as_tree_internal(&mut builder, 0)?;
         Ok(builder.build())
@@ -54,7 +54,7 @@ impl Element {
         &self,
         builder: &mut TreeStringBuilder,
         level: usize,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         match &self {
             Element::Environment {
                 name,
