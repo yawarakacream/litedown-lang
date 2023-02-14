@@ -215,13 +215,13 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    LineContent::Text("left".to_string()),
+                    LineContent::Text("left ".to_string()),
                     LineContent::Function {
                         name: "func".to_string(),
                         parameters: HashMap::new(),
                         body: None,
                     },
-                    LineContent::Text("right".to_string())
+                    LineContent::Text(" right".to_string())
                 ]
             ))
         );
@@ -231,7 +231,7 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    LineContent::Text("おはようございます".to_string()),
+                    LineContent::Text("おはようございます ".to_string()),
                     LineContent::Function {
                         name: "konnnitiha".to_string(),
                         parameters: command_params! {

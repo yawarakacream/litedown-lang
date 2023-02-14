@@ -138,7 +138,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_command_parameter("konnnitiha = \"こんにちは。\\\\ \\\"Hello\\\" \\\\\""),
+            parse_command_parameter(r#"konnnitiha = "こんにちは。\\ \"Hello\" \\""#),
             Ok((
                 "",
                 command_param!("konnnitiha" => String("こんにちは。\\ \"Hello\" \\".to_string()))
