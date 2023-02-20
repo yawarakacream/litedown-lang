@@ -7,13 +7,13 @@ use nom::{
 };
 
 use crate::{
-    litedown_element::{Line, LineContent},
+    litedown_element::{PassageContent, PassageContentFunction, PassageContentText},
     parser::command_parameter::parse_command_parameter,
     utility::nom::{namestr, IResultV},
     verror,
 };
 
-pub fn parse_passage_line(str: &str) -> IResultV<&str, Line> {
+pub fn parse_passage_line(str: &str) -> IResultV<&str, Vec<PassageContent>> {
     let mut ret = Vec::new();
 
     let mut text_buffer = String::new();
@@ -21,7 +21,7 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Line> {
     loop {
         if let Ok((str, _)) = eof::<&str, VerboseError<&str>>(str) {
             if !text_buffer.is_empty() {
-                ret.push(LineContent::Text(text_buffer));
+                ret.push(PassageContent::Text(PassageContentText(text_buffer)));
             }
 
             return Ok((str, ret));
@@ -40,7 +40,7 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Line> {
 
         if c == '@' {
             if !text_buffer.is_empty() {
-                ret.push(LineContent::Text(text_buffer));
+                ret.push(PassageContent::Text(PassageContentText(text_buffer)));
                 text_buffer = String::new();
             }
 
@@ -114,11 +114,11 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Line> {
                 Err(_) => None,
             };
 
-            ret.push(LineContent::Function {
+            ret.push(PassageContent::Function(PassageContentFunction {
                 name,
                 parameters,
                 body,
-            });
+            }));
         } else {
             text_buffer.push(c);
         }
@@ -131,25 +131,30 @@ mod tests {
 
     use crate::{
         command_params,
-        litedown_element::{CommandParameterValue::*, LineContent, NumberUnit},
+        litedown_element::{
+            CommandParameterValue::*, NumberUnit, PassageContent, PassageContentFunction,
+            PassageContentText,
+        },
         parser::passage_line::parse_passage_line,
     };
 
-    impl PartialEq for LineContent {
+    impl PartialEq for PassageContent {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
-                (Self::Text(l0), Self::Text(r0)) => l0 == r0,
+                (Self::Text(PassageContentText(l0)), Self::Text(PassageContentText(r0))) => {
+                    l0 == r0
+                }
                 (
-                    Self::Function {
+                    Self::Function(PassageContentFunction {
                         name: l_name,
                         parameters: l_parameters,
                         body: l_body,
-                    },
-                    Self::Function {
+                    }),
+                    Self::Function(PassageContentFunction {
                         name: r_name,
                         parameters: r_parameters,
                         body: r_body,
-                    },
+                    }),
                 ) => l_name == r_name && *l_parameters == *r_parameters && l_body == r_body,
                 _ => false,
             }
@@ -162,11 +167,11 @@ mod tests {
             parse_passage_line("@aaa"),
             Ok((
                 "",
-                vec![LineContent::Function {
+                vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
                     parameters: HashMap::new(),
                     body: None,
-                }]
+                })]
             ))
         );
 
@@ -174,13 +179,13 @@ mod tests {
             parse_passage_line("@aaa[p = 1]"),
             Ok((
                 "",
-                vec![LineContent::Function {
+                vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
                     parameters: command_params! {
                         "p" => Number(NumberUnit::None, 1.0)
                     },
                     body: None,
-                }]
+                })]
             ))
         );
 
@@ -188,11 +193,11 @@ mod tests {
             parse_passage_line("@aaa{bbb}"),
             Ok((
                 "",
-                vec![LineContent::Function {
+                vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
                     parameters: HashMap::new(),
                     body: Some("bbb".to_string())
-                }]
+                })]
             ))
         );
 
@@ -200,13 +205,13 @@ mod tests {
             parse_passage_line("@aaa[p = 1]{bbb}"),
             Ok((
                 "",
-                vec![LineContent::Function {
+                vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
                     parameters: command_params! {
                         "p" => Number(NumberUnit::None, 1.0)
                     },
                     body: Some("bbb".to_string())
-                }]
+                })]
             ))
         );
 
@@ -215,13 +220,13 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    LineContent::Text("left ".to_string()),
-                    LineContent::Function {
+                    PassageContent::Text(PassageContentText("left ".to_string())),
+                    PassageContent::Function(PassageContentFunction {
                         name: "func".to_string(),
                         parameters: HashMap::new(),
                         body: None,
-                    },
-                    LineContent::Text(" right".to_string())
+                    }),
+                    PassageContent::Text(PassageContentText(" right".to_string()))
                 ]
             ))
         );
@@ -231,15 +236,15 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    LineContent::Text("おはようございます ".to_string()),
-                    LineContent::Function {
+                    PassageContent::Text(PassageContentText("おはようございます ".to_string())),
+                    PassageContent::Function(PassageContentFunction {
                         name: "konnnitiha".to_string(),
                         parameters: command_params! {
                             "" => Number(NumberUnit::Px, 16.0)
                         },
                         body: Some("".to_string()),
-                    },
-                    LineContent::Text("こんばんは".to_string())
+                    }),
+                    PassageContent::Text(PassageContentText("こんばんは".to_string()))
                 ]
             ))
         );

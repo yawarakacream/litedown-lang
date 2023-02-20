@@ -1,27 +1,42 @@
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, error::Error, fmt};
 
 use crate::utility::tree_string_builder::TreeStringBuilder;
 
 #[derive(Debug)]
-pub enum Element {
-    Environment {
-        name: String,
-        parameters: HashMap<String, CommandParameterValue>,
-        children: Vec<Element>,
-    },
-    Passage(Vec<Line>),
+pub struct LitedownAst {
+    pub root: Element,
 }
 
-pub type Line = Vec<LineContent>;
+#[derive(Debug)]
+pub enum Element {
+    Environment(EnvironmentElement),
+    Passage(PassageElement),
+}
 
 #[derive(Debug)]
-pub enum LineContent {
-    Text(String),
-    Function {
-        name: String,
-        parameters: HashMap<String, CommandParameterValue>,
-        body: Option<String>,
-    },
+pub struct EnvironmentElement {
+    pub name: String,
+    pub parameters: HashMap<String, CommandParameterValue>,
+    pub children: Vec<Element>,
+}
+
+#[derive(Debug)]
+pub struct PassageElement(pub Vec<PassageContent>);
+
+#[derive(Debug)]
+pub enum PassageContent {
+    Text(PassageContentText),
+    Function(PassageContentFunction),
+}
+
+#[derive(Debug)]
+pub struct PassageContentText(pub String);
+
+#[derive(Debug)]
+pub struct PassageContentFunction {
+    pub name: String,
+    pub parameters: HashMap<String, CommandParameterValue>,
+    pub body: Option<String>,
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -31,10 +46,29 @@ pub enum NumberUnit {
     Em,
 }
 
+impl fmt::Display for NumberUnit {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            NumberUnit::None => Ok(()),
+            NumberUnit::Px => write!(f, "px"),
+            NumberUnit::Em => write!(f, "em"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum CommandParameterValue {
     String(String),
     Number(NumberUnit, f64),
+}
+
+impl fmt::Display for CommandParameterValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CommandParameterValue::String(s) => write!(f, "{}", s),
+            CommandParameterValue::Number(u, n) => write!(f, "{}{}", n, u),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -56,11 +90,11 @@ impl Element {
         level: usize,
     ) -> Result<(), Box<dyn Error>> {
         match &self {
-            Element::Environment {
+            Element::Environment(EnvironmentElement {
                 name,
                 parameters,
                 children,
-            } => {
+            }) => {
                 builder.add_node(
                     level,
                     format!(
@@ -72,29 +106,27 @@ impl Element {
                     c.stringify_as_tree_internal(builder, level + 1)?;
                 }
             }
-            Element::Passage(lines) => {
+            Element::Passage(PassageElement(contents)) => {
                 builder.add_node(level, "Passage");
-                for line in lines {
-                    for c in line {
-                        match c {
-                            LineContent::Text(content) => {
-                                builder.add_node(level + 1, format!("Text({:?})", content))
-                            }
-                            LineContent::Function {
-                                name,
-                                parameters,
-                                body,
-                            } => {
-                                builder.add_node(
-                                    level + 1,
-                                    format!(
-                                        "Function(name = {:?}, parameters = {:?})",
-                                        name, parameters
-                                    ),
-                                );
-                                if let Some(body) = body {
-                                    builder.add_node(level + 2, format!("Body({:?})", body));
-                                }
+                for c in contents {
+                    match c {
+                        PassageContent::Text(PassageContentText(text)) => {
+                            builder.add_node(level + 1, format!("Text({:?})", text))
+                        }
+                        PassageContent::Function(PassageContentFunction {
+                            name,
+                            parameters,
+                            body,
+                        }) => {
+                            builder.add_node(
+                                level + 1,
+                                format!(
+                                    "Function(name = {:?}, parameters = {:?})",
+                                    name, parameters
+                                ),
+                            );
+                            if let Some(body) = body {
+                                builder.add_node(level + 3, format!("Body({:?})", body));
                             }
                         }
                     }
