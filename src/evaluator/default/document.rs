@@ -1,3 +1,5 @@
+use std::mem::swap;
+
 use crate::{
     attrs,
     evaluator::environment::EnvironmentEvaluator,
@@ -6,6 +8,11 @@ use crate::{
 };
 
 use super::title::Title;
+
+struct Size {
+    width: String,
+    height: String,
+}
 
 enum FontFamily {
     Serif,
@@ -18,6 +25,8 @@ enum Math {
 }
 
 pub struct Document {
+    size: Size,
+    padding: String,
     font_size: String,
     font_family: FontFamily,
     math: Option<Math>,
@@ -26,8 +35,13 @@ pub struct Document {
 impl Document {
     pub fn new() -> Box<dyn EnvironmentEvaluator> {
         Box::new(Document {
+            size: Size {
+                width: "210mm".to_string(),
+                height: "297mm".to_string(),
+            },
             font_size: "11pt".to_string(),
             font_family: FontFamily::SansSerif,
+            padding: "1em 2em".to_string(),
             math: Some(Math::Katex),
         })
     }
@@ -39,6 +53,33 @@ impl EnvironmentEvaluatorComponents for Document {
         lde: &mut LitedownEvaluator,
         element: &EnvironmentElement,
     ) -> Result<(), String> {
+        if let Some(size) = &element.parameters.get("size") {
+            match size {
+                CommandParameterValue::String(string) => {
+                    let string = string.to_lowercase();
+                    let (size, orientation) = match string.find('-') {
+                        Some(hyphen) => (&string[..hyphen], Some(&string[(hyphen + 1)..])),
+                        None => (string.as_str(), None),
+                    };
+                    self.size = match size {
+                        "a4" => Size {
+                            width: "210mm".to_string(),
+                            height: "297mm".to_string(),
+                        },
+                        _ => return Err("Illegal size".to_string()),
+                    };
+                    if let Some(orientation) = orientation {
+                        match orientation {
+                            "portrait" => {}
+                            "landscape" => swap(&mut self.size.width, &mut self.size.height),
+                            _ => return Err(format!("Illegal size orientation: {}", orientation)),
+                        }
+                    }
+                }
+                _ => return Err("Illegal size".to_string()),
+            }
+        }
+
         if let Some(font_size) = &element.parameters.get("font-size") {
             match font_size {
                 CommandParameterValue::Number(unit, number) => {
@@ -66,6 +107,13 @@ impl EnvironmentEvaluatorComponents for Document {
             }
         }
 
+        if let Some(padding) = &element.parameters.get("padding") {
+            match padding {
+                CommandParameterValue::String(string) => self.padding = string.to_string(),
+                _ => return Err("Illegal padding".to_string()),
+            }
+        }
+
         if let Some(math) = &element.parameters.get("math") {
             match math {
                 CommandParameterValue::String(string) => {
@@ -87,19 +135,31 @@ impl EnvironmentEvaluatorComponents for Document {
     }
 
     fn close_environment(&mut self, lde: &mut LitedownEvaluator) -> Result<(), String> {
-        lde.writer.open_element("style", attrs! {})?;
+        lde.writer
+            .open_element("style", attrs! {"type" => "text/less"})?;
         lde.writer.write_raw_inner(&format!(
             r#"
-            .document {{
+            @page {{
+                size: A4;
+            }}
+
+            body {{
+                width: {width};
+                height: {height};
                 font-size: {font_size};
             }}
+
+            .document {{
+            }}
             "#,
+            width = self.size.width,
+            height = self.size.height,
             font_size = self.font_size,
         ))?;
         lde.writer.close_element("style")?;
 
-        match &self.math {
-            Some(math) => match math {
+        if let Some(math) = &self.math {
+            match math {
                 Math::Katex => {
                     lde.writer.add_void_element(
                         "link",
@@ -217,8 +277,7 @@ impl EnvironmentEvaluatorComponents for Document {
                     ))?;
                     lde.writer.close_element("style")?;
                 }
-            },
-            None => {}
+            }
         }
 
         lde.writer.close_element("div")

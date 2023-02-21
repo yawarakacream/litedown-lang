@@ -51,11 +51,6 @@ impl<'a> LitedownEvaluator<'a> {
         self.writer.write_raw_inner(STYLE)?;
         self.writer.close_element("style")?;
 
-        self.writer.open_element(
-            "script",
-            attrs! {"src" => "https://cdn.jsdelivr.net/npm/less"},
-        )?;
-        self.writer.close_element("script")?;
         Ok(())
     }
 
@@ -68,6 +63,14 @@ impl<'a> LitedownEvaluator<'a> {
         match self.get_environment(&root.name) {
             Some(mut environment) => {
                 environment.eval(&mut self, &root)?;
+
+                // less.js
+                self.writer.add_inline_element(
+                    "script",
+                    attrs! {"src" => "https://cdn.jsdelivr.net/npm/less", "defer" => "true"},
+                    "",
+                )?;
+
                 self.writer.build()
             }
             None => Err(format!("Unknown environment: {}", root.name)),

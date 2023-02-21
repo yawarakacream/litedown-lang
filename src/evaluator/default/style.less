@@ -1,21 +1,12 @@
-html {
-  width: 210mm;
-  // height: 297mm;
-  margin: 1rem;
+body {
+  margin: 0;
   padding: 0;
-  box-sizing: border-box;
 
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
 
-body {
-  width: 100%;
-  height: 100%;
-}
-
 @page {
-  size: A4 portrait;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -25,10 +16,23 @@ p {
   margin: 1em 0;
 }
 
+@media screen {
+  body {
+    padding: 48px;
+    background-color: lightgray;
+
+    & > * {
+      box-shadow: 0 0 8px #aaa, 0 0 8px #aaa, 0 0 8px #aaa;
+      background-color: white;
+    }
+  }
+}
+
 .document {
   & > .title {
-    width: 100%;
-    margin: 1em 0;
+    position: relative;
+    margin-top: 0;
+    margin-bottom: 1em;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -46,7 +50,7 @@ p {
     }
   }
 
-  & .list {
+  .list {
     width: 100%;
     margin: 0;
     padding-left: 3em;
@@ -57,7 +61,7 @@ p {
     }
   }
 
-  & .section {
+  .section {
     margin: 1em 0;
 
     &::before {
