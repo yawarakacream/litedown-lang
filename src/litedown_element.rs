@@ -39,34 +39,20 @@ pub struct PassageContentFunction {
     pub body: Option<String>,
 }
 
-#[derive(PartialEq, Eq, Debug)]
-pub enum NumberUnit {
-    None,
-    Px,
-    Em,
-}
-
-impl fmt::Display for NumberUnit {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            NumberUnit::None => Ok(()),
-            NumberUnit::Px => write!(f, "px"),
-            NumberUnit::Em => write!(f, "em"),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum CommandParameterValue {
     String(String),
-    Number(NumberUnit, f64),
+    Number(Option<String>, f64),
 }
 
 impl fmt::Display for CommandParameterValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             CommandParameterValue::String(s) => write!(f, "{}", s),
-            CommandParameterValue::Number(u, n) => write!(f, "{}{}", n, u),
+            CommandParameterValue::Number(u, n) => match u {
+                Some(u) => write!(f, "{}{}", n, u),
+                None => write!(f, "{}", n),
+            },
         }
     }
 }

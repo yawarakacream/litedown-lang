@@ -139,7 +139,7 @@ mod tests {
     use crate::{
         command_params,
         litedown_element::{
-            CommandParameterValue::*, Element, EnvironmentElement, NumberUnit, PassageContent,
+            CommandParameterValue::*, Element, EnvironmentElement, PassageContent,
             PassageContentFunction, PassageContentText, PassageElement,
         },
         parser::{environment::parse_environment, passage_line::parse_passage_line},
@@ -203,10 +203,11 @@ mod tests {
                     name: "name".to_string(),
                     parameters: command_params! {
                         "string" => String("あいうえお".to_string()),
-                        "number" => Number(NumberUnit::None, 1.1)
+                        "number" => Number(None, 1.1)
                     },
                     children: vec![Element::Passage(PassageElement(vec![
                         PassageContent::Text(PassageContentText("aaa".to_string())),
+                        PassageContent::Text(PassageContentText("\n".to_string())),
                         PassageContent::Text(PassageContentText("bbb".to_string()))
                     ]))]
                 })
@@ -231,6 +232,7 @@ mod tests {
                     children: vec![
                         Element::Passage(PassageElement(vec![
                             PassageContent::Text(PassageContentText("line 1".to_string())),
+                            PassageContent::Text(PassageContentText("\n".to_string())),
                             PassageContent::Text(PassageContentText("line 2".to_string()))
                         ])),
                         Element::Passage(PassageElement(vec![PassageContent::Text(
@@ -268,6 +270,7 @@ mod tests {
                     children: vec![
                         Element::Passage(PassageElement(vec![
                             PassageContent::Text(PassageContentText("aaa".to_string())),
+                            PassageContent::Text(PassageContentText("\n".to_string())),
                             PassageContent::Text(PassageContentText("bbb".to_string()))
                         ])),
                         Element::Passage(PassageElement(vec![PassageContent::Text(
@@ -282,6 +285,7 @@ mod tests {
                                 )])),
                                 Element::Passage(PassageElement(vec![
                                     PassageContent::Text(PassageContentText("yyy".to_string())),
+                                    PassageContent::Text(PassageContentText("\n".to_string())),
                                     PassageContent::Text(PassageContentText("zzz".to_string()))
                                 ])),
                             ]

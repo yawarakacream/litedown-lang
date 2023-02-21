@@ -19,7 +19,7 @@ impl FunctionEvaluator for BoldText {
         content: &PassageContentFunction,
     ) -> Result<(), String> {
         match &content.body {
-            Some(body) => lde.writer.add_element("strong", attrs! {}, &body),
+            Some(body) => lde.writer.add_inline_element("strong", attrs! {}, &body),
             None => Err("The body is empty".to_string()),
         }
     }
@@ -40,9 +40,12 @@ impl FunctionEvaluator for InlineMath {
         content: &PassageContentFunction,
     ) -> Result<(), String> {
         match &content.body {
-            Some(body) => lde
-                .writer
-                .add_element("span", attrs! {"class" => "inline-math"}, &body),
+            Some(body) => {
+                lde.writer
+                    .open_element("span", attrs! {"class" => "inline-math"})?;
+                lde.writer.write_raw_inner(&body)?;
+                lde.writer.close_element("span")
+            }
             None => Err("The body is empty".to_string()),
         }
     }

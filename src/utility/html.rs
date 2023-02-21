@@ -22,7 +22,6 @@ pub struct HtmlWriter {
     buffer: String,
     stack: Vec<String>,
     level: usize,
-    is_inner_empty: bool,
 }
 
 impl HtmlWriter {
@@ -31,7 +30,6 @@ impl HtmlWriter {
             buffer: String::new(),
             stack: Vec::new(),
             level: 0,
-            is_inner_empty: true,
         };
         instance.init().unwrap();
         instance
@@ -45,16 +43,14 @@ impl HtmlWriter {
         self.add_void_element("meta", attrs! {"charset" => "UTF-8"})?;
         self.add_void_element(
             "meta",
-            attrs! {
-                "http-equiv" => "X-UA-Compatible",
-                "content" => "IE=edge"
-            },
+            attrs! {"http-equiv" => "X-UA-Compatible", "content" => "IE=edge"},
         )?;
         self.add_void_element(
             "meta",
             attrs! {"name" => "viewport", "content" => "width=device-width, initial-scale=1.0"},
         )?;
-        self.add_element("title", attrs! {}, "Litedown")?;
+
+        self.add_inline_element("title", attrs! {}, "Litedown")?;
         self.close_element("head")?;
 
         self.buffer.push('\n');
@@ -85,11 +81,10 @@ impl HtmlWriter {
         self.stack.push(String::from(tag));
 
         self.buffer.push('\n');
-        self.buffer.push_str(&"  ".repeat(self.level));
+        // self.buffer.push_str(&"  ".repeat(self.level));
 
         self.write_open_tag(tag, attrs);
         self.level += 1;
-        self.is_inner_empty = true;
         Ok(())
     }
 
@@ -97,12 +92,15 @@ impl HtmlWriter {
         if self.level == 0 {
             return Err("No tag".to_string());
         }
-        if self.is_inner_empty {
-            self.buffer.push('\n');
-            self.buffer.push_str(&"  ".repeat(self.level));
-        }
-        self.is_inner_empty = false;
         self.buffer.push_str(&escape_html_text(text));
+        Ok(())
+    }
+
+    pub fn write_raw_inner(&mut self, text: &str) -> Result<(), String> {
+        if self.level == 0 {
+            return Err("No tag".to_string());
+        }
+        self.buffer.push_str(text);
         Ok(())
     }
 
@@ -114,7 +112,7 @@ impl HtmlWriter {
                     return Err(format!("Illegal tag: {}, expected: {}", tag, to_be_closed));
                 }
                 self.buffer.push('\n');
-                self.buffer.push_str(&"  ".repeat(self.level));
+                // self.buffer.push_str(&"  ".repeat(self.level));
                 self.write_close_tag(tag);
                 Ok(())
             }
@@ -122,17 +120,12 @@ impl HtmlWriter {
         }
     }
 
-    pub fn add_element(
+    pub fn add_inline_element(
         &mut self,
         tag: &str,
         attrs: HashMap<&str, &str>,
         inner_text: &str,
     ) -> Result<(), String> {
-        if self.is_inner_empty {
-            self.buffer.push('\n');
-            self.buffer.push_str(&"  ".repeat(self.level));
-        }
-        self.is_inner_empty = false;
         self.write_open_tag(tag, attrs);
         self.write_inner(inner_text).unwrap();
         self.write_close_tag(tag);

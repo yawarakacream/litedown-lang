@@ -48,7 +48,7 @@ where
 pub fn namestr<'a, E: ParseError<&'a str>>(str: &'a str) -> IResult<&'a str, String, E> {
     let (str, a) = alpha1(str)?;
     let (str, b) = opt(take_while1(|x: char| {
-        x.is_alphabetic() || x.is_dec_digit() || x == '_'
+        x.is_alphabetic() || x.is_dec_digit() || x == '-'
     }))(str)?;
     let mut result = a.to_string();
     if let Some(b) = b {

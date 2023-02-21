@@ -57,4 +57,12 @@ impl EnvironmentEvaluatorComponents for Author {
     fn close_environment(&mut self, lde: &mut LitedownEvaluator) -> Result<(), String> {
         lde.writer.close_element("div")
     }
+
+    fn open_passage(&mut self, _lde: &mut LitedownEvaluator) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn close_passage(&mut self, _lde: &mut LitedownEvaluator) -> Result<(), String> {
+        Ok(())
+    }
 }

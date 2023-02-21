@@ -111,7 +111,27 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Vec<PassageContent>> {
 
                     Some(body)
                 }
-                Err(_) => None,
+                Err(_) => match char::<&str, VerboseError<&str>>('$')(str) {
+                    Ok(tmp) => {
+                        str = tmp.0;
+                        let mut body = String::new();
+
+                        loop {
+                            let tmp = anychar(str)?;
+                            str = tmp.0;
+                            let c = tmp.1;
+
+                            if c == '$' {
+                                break;
+                            } else {
+                                body.push(c);
+                            }
+                        }
+
+                        Some(body)
+                    }
+                    Err(_) => None,
+                },
             };
 
             ret.push(PassageContent::Function(PassageContentFunction {
@@ -132,8 +152,7 @@ mod tests {
     use crate::{
         command_params,
         litedown_element::{
-            CommandParameterValue::*, NumberUnit, PassageContent, PassageContentFunction,
-            PassageContentText,
+            CommandParameterValue::*, PassageContent, PassageContentFunction, PassageContentText,
         },
         parser::passage_line::parse_passage_line,
     };
@@ -182,7 +201,7 @@ mod tests {
                 vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
                     parameters: command_params! {
-                        "p" => Number(NumberUnit::None, 1.0)
+                        "p" => Number(None, 1.0)
                     },
                     body: None,
                 })]
@@ -208,7 +227,7 @@ mod tests {
                 vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
                     parameters: command_params! {
-                        "p" => Number(NumberUnit::None, 1.0)
+                        "p" => Number(None, 1.0)
                     },
                     body: Some("bbb".to_string())
                 })]
@@ -240,7 +259,7 @@ mod tests {
                     PassageContent::Function(PassageContentFunction {
                         name: "konnnitiha".to_string(),
                         parameters: command_params! {
-                            "" => Number(NumberUnit::Px, 16.0)
+                            "" => Number(Some("px".to_string()), 16.0)
                         },
                         body: Some("".to_string()),
                     }),

@@ -22,11 +22,11 @@ impl EnvironmentEvaluatorComponents for Section {
         _element: &EnvironmentElement,
     ) -> Result<(), String> {
         lde.writer
-            .open_element("div", attrs! {"class" => "section"})
+            .open_element("section", attrs! {"class" => "section"})
     }
 
     fn close_environment(&mut self, lde: &mut LitedownEvaluator) -> Result<(), String> {
-        lde.writer.close_element("div")
+        lde.writer.close_element("section")
     }
 
     fn eval_child_environment(

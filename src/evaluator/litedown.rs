@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    attrs,
     litedown_element::{Element, EnvironmentElement, LitedownAst, PassageContentFunction},
     utility::html::HtmlWriter,
 };
@@ -16,6 +17,8 @@ use super::{
     function::FunctionEvaluator,
 };
 
+static STYLE: &str = include_str!("./default/style.less");
+
 pub struct LitedownEvaluator<'a> {
     pub writer: HtmlWriter,
     environments: HashMap<&'a str, fn() -> Box<dyn EnvironmentEvaluator>>,
@@ -24,22 +27,36 @@ pub struct LitedownEvaluator<'a> {
 
 impl<'a> LitedownEvaluator<'a> {
     pub fn new() -> Self {
-        let writer = HtmlWriter::new();
+        let mut instance = LitedownEvaluator {
+            writer: HtmlWriter::new(),
+            environments: HashMap::new(),
+            functions: HashMap::new(),
+        };
 
-        let mut environments: HashMap<_, fn() -> Box<dyn EnvironmentEvaluator>> = HashMap::new();
-        environments.insert("document", Document::new);
-        environments.insert("section", Section::new);
-        environments.insert("list", List::new);
+        instance.init_default().unwrap();
 
-        let mut functions: HashMap<_, fn() -> Box<dyn FunctionEvaluator>> = HashMap::new();
-        functions.insert("bold", BoldText::new);
-        functions.insert("inlinemath", InlineMath::new);
+        instance
+    }
 
-        LitedownEvaluator {
-            writer,
-            environments,
-            functions,
-        }
+    fn init_default(&mut self) -> Result<(), String> {
+        self.environments.insert("document", Document::new);
+        self.environments.insert("section", Section::new);
+        self.environments.insert("list", List::new);
+
+        self.functions.insert("math", InlineMath::new);
+        self.functions.insert("bold", BoldText::new);
+
+        self.writer
+            .open_element("style", attrs! {"type" => "text/less"})?;
+        self.writer.write_raw_inner(STYLE)?;
+        self.writer.close_element("style")?;
+
+        self.writer.open_element(
+            "script",
+            attrs! {"src" => "https://cdn.jsdelivr.net/npm/less"},
+        )?;
+        self.writer.close_element("script")?;
+        Ok(())
     }
 
     pub fn eval(mut self, ast: &LitedownAst) -> Result<String, String> {
@@ -51,7 +68,6 @@ impl<'a> LitedownEvaluator<'a> {
         match self.get_environment(&root.name) {
             Some(mut environment) => {
                 environment.eval(&mut self, &root)?;
-                // Ok(self.buffer)
                 self.writer.build()
             }
             None => Err(format!("Unknown environment: {}", root.name)),

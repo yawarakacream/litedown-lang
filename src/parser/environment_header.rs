@@ -101,7 +101,7 @@ pub fn parse_environment_header(
 mod tests {
     use crate::{
         command_params,
-        litedown_element::{CommandParameterValue::*, EnvironmentHeader, NumberUnit},
+        litedown_element::{CommandParameterValue::*, EnvironmentHeader},
         parser::environment_header::parse_environment_header,
     };
 
@@ -120,7 +120,7 @@ mod tests {
                 EnvironmentHeader {
                     name: "headername".to_string(),
                     parameters: command_params! {
-                        "" => Number(NumberUnit::None, 2.4)
+                        "" => Number(None, 2.4)
                     }
                 }
             ))
@@ -136,9 +136,9 @@ mod tests {
                     name: "headername".to_string(),
                     parameters: command_params! {
                         "string" => String("aa\"あ".to_string()),
-                        "number" => Number(NumberUnit::None, 1.1),
-                        "pixel" => Number(NumberUnit::Px, 5.0),
-                        "M" => Number(NumberUnit::Em, -7.8)
+                        "number" => Number(None, 1.1),
+                        "pixel" => Number(Some("px".to_string()), 5.0),
+                        "M" => Number(Some("em".to_string()), -7.8)
                     }
                 }
             ))
@@ -157,7 +157,7 @@ mod tests {
                     name: "name".to_string(),
                     parameters: command_params! {
                         "aiueo" => String("あいうえお".to_string()),
-                        "iti_ni" => Number(NumberUnit::None, 12.0)
+                        "iti_ni" => Number(None, 12.0)
                     }
                 }
             ))
