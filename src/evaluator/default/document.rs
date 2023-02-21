@@ -39,8 +39,8 @@ impl EnvironmentEvaluatorComponents for Document {
         lde: &mut LitedownEvaluator,
         element: &EnvironmentElement,
     ) -> Result<(), String> {
-        match &element.parameters.get("font-size") {
-            Some(font_size) => match font_size {
+        if let Some(font_size) = &element.parameters.get("font-size") {
+            match font_size {
                 CommandParameterValue::Number(unit, number) => {
                     self.font_size = number.to_string();
                     match unit {
@@ -48,13 +48,12 @@ impl EnvironmentEvaluatorComponents for Document {
                         None => {}
                     }
                 }
-                _ => {}
-            },
-            None => {}
+                _ => return Err("Illegal font-size".to_string()),
+            }
         }
 
-        match &element.parameters.get("font-family") {
-            Some(font_size) => match font_size {
+        if let Some(font_family) = &element.parameters.get("font-family") {
+            match font_family {
                 CommandParameterValue::String(string) => {
                     let string = string.as_str();
                     self.font_family = match string {
@@ -63,25 +62,24 @@ impl EnvironmentEvaluatorComponents for Document {
                         _ => return Err("Illegal font-family".to_string()),
                     }
                 }
-                _ => {}
-            },
-            None => {}
+                _ => return Err("Illegal font-family".to_string()),
+            }
         }
 
-        match &element.parameters.get("math") {
-            Some(math) => match math {
+        if let Some(math) = &element.parameters.get("math") {
+            match math {
                 CommandParameterValue::String(string) => {
                     let string = string.to_lowercase();
                     let string = string.as_str();
                     self.math = match string {
                         "katex" => Some(Math::Katex),
                         "mathjax" => Some(Math::MathJax),
+                        "none" => None,
                         _ => return Err("Illegal math".to_string()),
                     }
                 }
-                _ => {}
-            },
-            None => self.math = None,
+                _ => return Err("Illegal math".to_string()),
+            }
         }
 
         lde.writer
