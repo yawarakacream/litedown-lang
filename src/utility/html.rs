@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use headless_chrome::{types::PrintToPdfOptions, Browser, LaunchOptions};
+
 // #[macro_export]
 // macro_rules! html {
 //     (<$tag:ident $($attrkey:ident={$attrvalue:expr})*>) => {
@@ -50,7 +52,7 @@ impl HtmlWriter {
             attrs! {"name" => "viewport", "content" => "width=device-width, initial-scale=1.0"},
         )?;
 
-        self.add_inline_element("title", attrs! {}, "Litedown")?;
+        self.add_inline_element("title", attrs! {}, "litedown")?;
         self.close_element("head")?;
 
         self.buffer.push('\n');
@@ -167,4 +169,27 @@ fn escape_html_text(str: &str) -> String {
         }
     }
     buffer
+}
+
+pub fn print_html_to_pdf(html_path: &str) -> anyhow::Result<Vec<u8>> {
+    let browser = Browser::new(
+        LaunchOptions::default_builder()
+            .build()
+            .expect("Could not find chrome-executable"),
+    )?;
+
+    let tab = browser.new_tab().unwrap();
+
+    let mut pdf_option = PrintToPdfOptions::default();
+    pdf_option.margin_top = Some(0.0);
+    pdf_option.margin_bottom = Some(0.0);
+    pdf_option.margin_left = Some(0.0);
+    pdf_option.margin_right = Some(0.0);
+    pdf_option.scale = Some(1.0);
+    pdf_option.prefer_css_page_size = Some(true);
+    pdf_option.print_background = Some(true);
+
+    tab.navigate_to(&format!("file://{}", html_path))?
+        .wait_until_navigated()?
+        .print_to_pdf(Some(pdf_option))
 }

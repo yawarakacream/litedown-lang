@@ -16,7 +16,10 @@ use parser::{
 };
 use utility::nom::print_nom;
 
-use crate::{evaluator::litedown::LitedownEvaluator, parser::environment::parse_litedown};
+use crate::{
+    evaluator::litedown::LitedownEvaluator, parser::environment::parse_litedown,
+    utility::html::print_html_to_pdf,
+};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -80,14 +83,23 @@ fn main() {
                     [0..(&source_file_name.len() - (&source_file_extension.len() + 1))];
 
                 // save html
-                let output_html =
+                let output_html_path =
                     source_path.with_file_name(format!("{}.html", source_file_name_without_ext));
 
-                println!("Saving to {:?}", output_html);
+                println!("Saving to {:?}", output_html_path);
 
-                let mut output_html = File::create(output_html).unwrap();
+                let mut output_html = File::create(&output_html_path).unwrap();
                 writeln!(output_html, "{}", html).unwrap();
                 output_html.flush().unwrap();
+
+                // save pdf
+                let output_pdf_path =
+                    source_path.with_file_name(format!("{}.pdf", source_file_name_without_ext));
+
+                println!("Saving to {:?}", output_pdf_path);
+
+                let output_pdf = print_html_to_pdf(output_html_path.to_str().unwrap()).unwrap();
+                fs::write(output_pdf_path, &output_pdf).unwrap();
             }
             Err(e) => {
                 println!("{:?}", e);

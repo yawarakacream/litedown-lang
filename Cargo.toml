@@ -9,3 +9,7 @@ edition = "2021"
 version = "7"
 default-features = false
 features = ["alloc"]
+
+[dependencies]
+headless_chrome = {git = "https://github.com/atroche/rust-headless-chrome"}
+anyhow = "1.0"
