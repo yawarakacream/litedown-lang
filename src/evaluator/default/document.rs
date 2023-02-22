@@ -36,10 +36,8 @@ impl Document {
     pub fn new() -> Box<dyn EnvironmentEvaluator> {
         Box::new(Document {
             size: Size {
-                // width: "210mm".to_string(),
-                // height: "297mm".to_string(),
-                width: "512px".to_string(),
-                height: "1024px".to_string(),
+                width: "210mm".to_string(),
+                height: "297mm".to_string(),
             },
             font_size: "11pt".to_string(),
             font_family: FontFamily::SansSerif,
