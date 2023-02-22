@@ -26,7 +26,7 @@ enum Math {
 
 pub struct Document {
     size: Size,
-    padding: String,
+    padding: Size,
     font_size: String,
     font_family: FontFamily,
     math: Option<Math>,
@@ -36,12 +36,17 @@ impl Document {
     pub fn new() -> Box<dyn EnvironmentEvaluator> {
         Box::new(Document {
             size: Size {
-                width: "210mm".to_string(),
-                height: "297mm".to_string(),
+                // width: "210mm".to_string(),
+                // height: "297mm".to_string(),
+                width: "512px".to_string(),
+                height: "1024px".to_string(),
             },
             font_size: "11pt".to_string(),
             font_family: FontFamily::SansSerif,
-            padding: "1em 2em".to_string(),
+            padding: Size {
+                width: "2em".to_string(),
+                height: "1em".to_string(),
+            },
             math: Some(Math::Katex),
         })
     }
@@ -109,7 +114,20 @@ impl EnvironmentEvaluatorComponents for Document {
 
         if let Some(padding) = &element.parameters.get("padding") {
             match padding {
-                CommandParameterValue::String(string) => self.padding = string.to_string(),
+                CommandParameterValue::String(string) => {
+                    let splitted = string.split(' ').collect::<Vec<_>>();
+                    self.padding = match splitted.len() {
+                        1 => Size {
+                            width: splitted[0].to_string(),
+                            height: splitted[0].to_string(),
+                        },
+                        2 => Size {
+                            width: splitted[1].to_string(),
+                            height: splitted[0].to_string(),
+                        },
+                        _ => return Err("Illegal padding".to_string()),
+                    }
+                }
                 _ => return Err("Illegal padding".to_string()),
             }
         }
@@ -135,26 +153,37 @@ impl EnvironmentEvaluatorComponents for Document {
     }
 
     fn close_environment(&mut self, lde: &mut LitedownEvaluator) -> Result<(), String> {
+        //TODO よりよいサイズ指定方法を探す
         lde.writer
             .open_element("style", attrs! {"type" => "text/less"})?;
         lde.writer.write_raw_inner(&format!(
             r#"
             @page {{
-                size: A4;
-            }}
-
-            body {{
-                width: {width};
-                height: {height};
-                font-size: {font_size};
+                size: {width} {height};
+                margin: {padding_height} 0;
+                padding: 0;
+                border-width: 0;
             }}
 
             .document {{
+                font-size: {font_size};
+
+                @media screen {{
+                    width: calc({width} - 2 * {padding_width});
+                    padding: {padding_height} {padding_width};
+                }}
+
+                @media print {{
+                    width: calc({width} - 2 * {padding_width});
+                    margin: 0 {padding_width};
+                }}
             }}
             "#,
             width = self.size.width,
             height = self.size.height,
             font_size = self.font_size,
+            padding_width = self.padding.width,
+            padding_height = self.padding.height,
         ))?;
         lde.writer.close_element("style")?;
 
