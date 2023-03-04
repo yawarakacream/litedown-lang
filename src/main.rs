@@ -57,19 +57,20 @@ fn main() {
         // let output_path = "./demo/demo.html";
 
         let source_code = fs::read_to_string(&source_path).unwrap();
+        let source_code = source_code.as_str();
 
         // let ret = print_nom(&source_code, parse_environment(0));
         // if let Some(env) = ret {
         //     println!("{}", env.stringify_as_tree().unwrap());
         // }
 
-        match parse_litedown(&source_code) {
+        match parse_litedown(source_code) {
             Ok(ast) => {
                 // ast
                 println!("{}", ast.root.stringify_as_tree().unwrap());
 
                 // html
-                let evaluator = LitedownEvaluator::new();
+                let evaluator = LitedownEvaluator::new(Some(source_path.clone()));
                 let html = evaluator.eval(&ast).unwrap();
                 println!("{}", html);
 
@@ -101,8 +102,9 @@ fn main() {
                 let output_pdf = print_html_to_pdf(output_html_path.to_str().unwrap()).unwrap();
                 fs::write(output_pdf_path, &output_pdf).unwrap();
             }
-            Err(e) => {
-                println!("{:?}", e);
+            Err(err) => {
+                eprintln!("\x1B[41mError!\x1B[0m");
+                eprintln!("{}", nom::error::convert_error(source_code, err.clone()));
             }
         }
     } else {

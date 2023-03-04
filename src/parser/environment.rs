@@ -2,6 +2,7 @@ use nom::{
     character::complete::{line_ending, space0},
     combinator::eof,
     error::VerboseError,
+    Finish,
 };
 
 use crate::{
@@ -121,8 +122,8 @@ pub(crate) fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&
     }
 }
 
-pub fn parse_litedown(str: &str) -> Result<LitedownAst, nom::Err<VerboseError<&str>>> {
-    let (_, environment) = parse_environment(0)(str)?;
+pub fn parse_litedown(str: &str) -> Result<LitedownAst, VerboseError<&str>> {
+    let (_, environment) = parse_environment(0)(str).finish()?;
     // let environment = match environment {
     //     Element::Environment(environment) => environment,
     //     Element::Passage(_) => unreachable!(),
