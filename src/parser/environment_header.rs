@@ -148,7 +148,7 @@ mod tests {
             parse_environment_header(4)(
                 "    @name[
         aiueo = `あいうえお`,
-        iti_ni = 12
+        iti-ni = 12
     ]@"
             ),
             Ok((
@@ -157,7 +157,7 @@ mod tests {
                     name: "name".to_string(),
                     parameters: command_params! {
                         "aiueo" => String("あいうえお".to_string()),
-                        "iti_ni" => Number(None, 12.0)
+                        "iti-ni" => Number(None, 12.0)
                     }
                 }
             ))
