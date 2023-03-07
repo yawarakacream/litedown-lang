@@ -1,15 +1,19 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
+
+use anyhow::{bail, Result};
 
 use crate::{
-    attrs,
     litedown_element::{Element, EnvironmentElement, LitedownAst, PassageContentFunction},
-    utility::html::HtmlWriter,
+    utility::html::{Html, HtmlElement, HtmlString},
 };
 
 use super::{
     default::{
-        decorators::{BoldText, InlineMath},
+        code::CodeBlock,
+        decorators::{BoldText, InlineMath, PageBreak},
         document::Document,
+        figure::Figure,
+        image::Image,
         list::List,
         section::Section,
     },
@@ -19,103 +23,116 @@ use super::{
 
 static STYLE: &str = include_str!("./default/style.less");
 
-pub struct LitedownEvaluator<'a> {
-    pub writer: HtmlWriter,
-    environments: HashMap<&'a str, fn() -> Box<dyn EnvironmentEvaluator>>,
-    functions: HashMap<&'a str, fn() -> Box<dyn FunctionEvaluator>>,
+pub struct LitedownEvaluator {
+    source: Option<PathBuf>,
+    environments: HashMap<String, Box<dyn EnvironmentEvaluator>>,
+    functions: HashMap<String, Box<dyn FunctionEvaluator>>,
 }
 
-impl<'a> LitedownEvaluator<'a> {
-    pub fn new() -> Self {
+impl LitedownEvaluator {
+    pub fn new(source: Option<PathBuf>) -> Self {
         let mut instance = LitedownEvaluator {
-            writer: HtmlWriter::new(),
+            source,
             environments: HashMap::new(),
             functions: HashMap::new(),
         };
 
-        instance.init_default().unwrap();
+        instance.init_default();
 
         instance
     }
 
-    fn init_default(&mut self) -> Result<(), String> {
-        self.environments.insert("document", Document::new);
-        self.environments.insert("section", Section::new);
-        self.environments.insert("list", List::new);
+    fn init_default(&mut self) {
+        self.set_environment("document", Document::new());
+        self.set_environment("section", Section::new());
+        self.set_environment("list", List::new());
+        self.set_environment("code", CodeBlock::new());
+        self.set_environment("figure", Figure::new());
 
-        self.functions.insert("math", InlineMath::new);
-        self.functions.insert("bold", BoldText::new);
-
-        self.writer
-            .open_element("style", attrs! {"type" => "text/less"})?;
-        self.writer.write_raw_inner(STYLE)?;
-        self.writer.close_element("style")?;
-
-        Ok(())
+        self.set_function("pagebreak", PageBreak::new());
+        self.set_function("math", InlineMath::new());
+        self.set_function("bold", BoldText::new());
+        self.set_function("image", Image::new());
     }
 
-    pub fn eval(mut self, ast: &LitedownAst) -> Result<String, String> {
-        let root = match &ast.root {
-            Element::Environment(environment) => environment,
+    pub fn get_source(&self) -> &Option<PathBuf> {
+        &self.source
+    }
+
+    pub fn eval(mut self, ast: &LitedownAst) -> Result<HtmlString> {
+        let mut root = Html::new();
+
+        // main style
+        let mut less_style = HtmlElement::new("style");
+        less_style.set_attr("type", "text/less");
+        less_style.append_raw_text(STYLE);
+        root.append_head(less_style);
+
+        // less.js
+        let mut less_script = HtmlElement::new("script");
+        less_script.set_attr("src", "https://cdn.jsdelivr.net/npm/less");
+        less_script.set_attr("defer", "true");
+        root.append_head(less_script);
+
+        match &ast.root {
+            Element::Environment(environment) => {
+                root.append_body(self.eval_environment(environment)?)
+            }
             Element::Passage(_) => panic!("Illegal element"),
         };
 
-        match self.get_environment(&root.name) {
-            Some(mut environment) => {
-                environment.eval(&mut self, &root)?;
-
-                // less.js
-                self.writer.add_inline_element(
-                    "script",
-                    attrs! {"src" => "https://cdn.jsdelivr.net/npm/less", "defer" => "true"},
-                    "",
-                )?;
-
-                self.writer.build()
+        for environment in self.environments.values() {
+            let heads = environment.get_head()?;
+            for head in heads {
+                root.append_head(head);
             }
-            None => Err(format!("Unknown environment: {}", root.name)),
         }
+
+        Ok(root.to_string())
     }
 
-    pub fn get_environment(&self, key: &str) -> Option<Box<dyn EnvironmentEvaluator>> {
-        self.environments.get(key).map(|environment| environment())
-    }
-
-    pub fn set_environment(&mut self, key: &'a str, value: fn() -> Box<dyn EnvironmentEvaluator>) {
+    pub fn set_environment(&mut self, key: &str, value: Box<dyn EnvironmentEvaluator>) {
+        let key = key.to_string();
         if self.environments.contains_key(&key) {
             panic!("Already exists: {}", key);
         }
         self.environments.insert(key, value);
     }
 
-    pub fn eval_environment(&mut self, element: &EnvironmentElement) -> Result<(), String> {
-        match self.get_environment(&element.name) {
+    pub fn eval_environment(&mut self, element: &EnvironmentElement) -> Result<HtmlElement> {
+        let key = element.name.clone();
+        let environment = self.environments.remove(&key);
+        match environment {
             Some(mut environment) => {
-                environment.eval(self, element)?;
-                Ok(())
+                let result = environment.eval(self, element);
+                self.environments.insert(key, environment);
+                result
             }
-            None => Err(format!("Unknown environment: {}", element.name)),
+            None => bail!("Unknown environment: {}", element.name),
         }
     }
 
-    pub fn get_function(&self, key: &str) -> Option<Box<dyn FunctionEvaluator>> {
-        self.functions.get(key).map(|function| function())
-    }
-
-    pub fn set_function(&mut self, key: &'a str, value: fn() -> Box<dyn FunctionEvaluator>) {
+    pub fn set_function(&mut self, key: &str, value: Box<dyn FunctionEvaluator>) {
+        let key = key.to_string();
         if self.functions.contains_key(&key) {
             panic!("Already exists: {}", key);
         }
         self.functions.insert(key, value);
     }
 
-    pub fn eval_function(&mut self, content: &PassageContentFunction) -> Result<(), String> {
-        match self.get_function(&content.name) {
-            Some(function) => {
-                function.eval(self, content)?;
-                Ok(())
+    pub fn eval_function(
+        &mut self,
+        content: &PassageContentFunction,
+    ) -> Result<Option<HtmlElement>> {
+        let key = content.name.clone();
+        let function = self.functions.remove(&key);
+        match function {
+            Some(mut function) => {
+                let result = function.eval(self, content);
+                self.functions.insert(key, function);
+                result
             }
-            None => Err(format!("Unknown function: {}", content.name)),
+            None => bail!("Unknown function: {}", content.name),
         }
     }
 }

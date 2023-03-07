@@ -1,8 +1,30 @@
+use anyhow::{bail, Result};
+
 use crate::{
-    attrs,
     evaluator::{function::FunctionEvaluator, litedown::LitedownEvaluator},
     litedown_element::PassageContentFunction,
+    utility::html::HtmlElement,
 };
+
+pub struct PageBreak;
+
+impl PageBreak {
+    pub fn new() -> Box<dyn FunctionEvaluator> {
+        Box::new(PageBreak {})
+    }
+}
+
+impl FunctionEvaluator for PageBreak {
+    fn eval(
+        &mut self,
+        _: &mut LitedownEvaluator,
+        _: &PassageContentFunction,
+    ) -> Result<Option<HtmlElement>> {
+        let mut el = HtmlElement::new("div");
+        el.set_attr("class", "page-break");
+        Ok(Some(el))
+    }
+}
 
 pub struct BoldText;
 
@@ -14,13 +36,17 @@ impl BoldText {
 
 impl FunctionEvaluator for BoldText {
     fn eval(
-        &self,
-        lde: &mut LitedownEvaluator,
+        &mut self,
+        _: &mut LitedownEvaluator,
         content: &PassageContentFunction,
-    ) -> Result<(), String> {
+    ) -> Result<Option<HtmlElement>> {
         match &content.body {
-            Some(body) => lde.writer.add_inline_element("strong", attrs! {}, &body),
-            None => Err("The body is empty".to_string()),
+            Some(body) => {
+                let mut strong = HtmlElement::new("strong");
+                strong.append_text(body);
+                Ok(Some(strong))
+            }
+            None => bail!("The body is empty"),
         }
     }
 }
@@ -35,18 +61,18 @@ impl InlineMath {
 
 impl FunctionEvaluator for InlineMath {
     fn eval(
-        &self,
-        lde: &mut LitedownEvaluator,
+        &mut self,
+        _: &mut LitedownEvaluator,
         content: &PassageContentFunction,
-    ) -> Result<(), String> {
+    ) -> Result<Option<HtmlElement>> {
         match &content.body {
             Some(body) => {
-                lde.writer
-                    .open_element("span", attrs! {"class" => "inline-math"})?;
-                lde.writer.write_raw_inner(&body)?;
-                lde.writer.close_element("span")
+                let mut span = HtmlElement::new("span");
+                span.set_attr("class", "inline-math");
+                span.append_raw_text(body);
+                Ok(Some(span))
             }
-            None => Err("The body is empty".to_string()),
+            None => bail!("The body is empty"),
         }
     }
 }

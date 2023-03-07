@@ -2,157 +2,130 @@ use std::collections::HashMap;
 
 use headless_chrome::{types::PrintToPdfOptions, Browser, LaunchOptions};
 
-// #[macro_export]
-// macro_rules! html {
-//     (<$tag:ident $($attrkey:ident={$attrvalue:expr})*>) => {
-//         concat!("<", stringify!($tag), $(" ", stringify!($attrkey), "=\"", $attrvalue, "\"", )* ">")
-//     };
+use anyhow::Result;
 
-//     (</$tag:ident>) => {
-//         concat!("</", stringify!($tag), ">")
-//     };
-// }
-
-#[macro_export]
-macro_rules! attrs {
-    ($($name:expr => $value:expr),*) => {
-        vec![ $( ($name, $value) ),* ].into_iter().collect()
-    };
+pub struct Html {
+    head: Vec<HtmlElement>,
+    body: Vec<HtmlElement>,
 }
-
-pub struct HtmlWriter {
-    buffer: String,
-    stack: Vec<String>,
-    level: usize,
-}
-
-impl HtmlWriter {
+impl Html {
     pub fn new() -> Self {
-        let mut instance = HtmlWriter {
-            buffer: String::new(),
-            stack: Vec::new(),
-            level: 0,
-        };
-        instance.init().unwrap();
-        instance
+        Html {
+            head: Vec::new(),
+            body: Vec::new(),
+        }
     }
 
-    fn init(&mut self) -> Result<(), String> {
-        self.buffer.push_str("<!DOCTYPE html>");
-        self.open_element("html", attrs! {"lang" => "ja"})?;
-
-        self.open_element("head", attrs! {})?;
-        self.add_void_element("meta", attrs! {"charset" => "UTF-8"})?;
-        self.add_void_element(
-            "meta",
-            attrs! {"http-equiv" => "X-UA-Compatible", "content" => "IE=edge"},
-        )?;
-        self.add_void_element(
-            "meta",
-            attrs! {"name" => "viewport", "content" => "width=device-width, initial-scale=1.0"},
-        )?;
-
-        self.add_inline_element("title", attrs! {}, "litedown")?;
-        self.close_element("head")?;
-
-        self.buffer.push('\n');
-
-        self.open_element("body", attrs! {})?;
-        Ok(())
+    pub fn append_head(&mut self, element: HtmlElement) {
+        self.head.push(element);
     }
 
-    fn write_open_tag(&mut self, tag: &str, attrs: HashMap<&str, &str>) {
-        self.buffer.push_str("<");
-        self.buffer.push_str(tag);
+    pub fn append_body(&mut self, element: HtmlElement) {
+        self.body.push(element);
+    }
 
-        for (k, v) in attrs.iter() {
-            self.buffer.push(' ');
-            self.buffer.push_str(&format!("{}={:?}", k, v));
+    pub fn to_string(&self) -> HtmlString {
+        let mut head = HtmlElement::new("head");
+        for el in &self.head {
+            head.append(el.clone());
         }
 
-        self.buffer.push_str(">");
-    }
-
-    fn write_close_tag(&mut self, tag: &str) {
-        self.buffer.push_str("</");
-        self.buffer.push_str(tag);
-        self.buffer.push_str(">");
-    }
-
-    pub fn open_element(&mut self, tag: &str, attrs: HashMap<&str, &str>) -> Result<(), String> {
-        self.stack.push(String::from(tag));
-
-        self.buffer.push('\n');
-        // self.buffer.push_str(&"  ".repeat(self.level));
-
-        self.write_open_tag(tag, attrs);
-        self.level += 1;
-        Ok(())
-    }
-
-    pub fn write_inner(&mut self, text: &str) -> Result<(), String> {
-        if self.level == 0 {
-            return Err("No tag".to_string());
+        let mut body = HtmlElement::new("body");
+        for el in &self.body {
+            body.append(el.clone());
         }
-        self.buffer.push_str(&escape_html_text(text));
-        Ok(())
-    }
 
-    pub fn write_raw_inner(&mut self, text: &str) -> Result<(), String> {
-        if self.level == 0 {
-            return Err("No tag".to_string());
+        HtmlString {
+            head: head.to_string(),
+            body: body.to_string(),
         }
-        self.buffer.push_str(text);
-        Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub struct HtmlElement {
+    tag: String,
+    attr: HashMap<String, String>,
+    children: Option<Vec<HtmlElementChild>>,
+}
+
+impl HtmlElement {
+    pub fn new(tag: &str) -> Self {
+        HtmlElement {
+            tag: tag.to_string(),
+            attr: HashMap::new(),
+            children: Some(Vec::new()),
+        }
     }
 
-    pub fn close_element(&mut self, tag: &str) -> Result<(), String> {
-        self.level -= 1;
-        match self.stack.pop() {
-            Some(to_be_closed) => {
-                if to_be_closed != tag {
-                    return Err(format!("Illegal tag: {}, expected: {}", tag, to_be_closed));
-                }
-                self.buffer.push('\n');
-                // self.buffer.push_str(&"  ".repeat(self.level));
-                self.write_close_tag(tag);
-                Ok(())
+    pub fn new_void(tag: &str) -> Self {
+        HtmlElement {
+            tag: tag.to_string(),
+            attr: HashMap::new(),
+            children: None,
+        }
+    }
+
+    pub fn set_attr(&mut self, key: &str, value: &str) {
+        self.attr.insert(key.to_string(), value.to_string());
+    }
+
+    pub fn append(&mut self, element: HtmlElement) -> &mut Self {
+        match &mut self.children {
+            Some(children) => {
+                children.push(HtmlElementChild::HtmlElement(element));
+                self
             }
-            None => Err("All tags have already been closed".to_string()),
+            None => panic!("The void element cannot contain children"),
         }
     }
 
-    pub fn add_inline_element(
-        &mut self,
-        tag: &str,
-        attrs: HashMap<&str, &str>,
-        inner_text: &str,
-    ) -> Result<(), String> {
-        self.write_open_tag(tag, attrs);
-        self.write_inner(inner_text).unwrap();
-        self.write_close_tag(tag);
-        Ok(())
-    }
-
-    pub fn add_void_element(
-        &mut self,
-        tag: &str,
-        attrs: HashMap<&str, &str>,
-    ) -> Result<(), String> {
-        self.open_element(tag, attrs)?;
-        self.level -= 1;
-        self.stack.pop();
-        Ok(())
-    }
-
-    pub fn build(mut self) -> Result<String, String> {
-        self.close_element("body")?;
-        self.close_element("html")?;
-        if self.level != 0 || self.stack.len() != 0 {
-            return Err("Illegal state".to_string());
+    pub fn append_raw_text(&mut self, element: &str) -> &mut Self {
+        match &mut self.children {
+            Some(children) => {
+                children.push(HtmlElementChild::String(element.to_string()));
+                self
+            }
+            None => panic!("The void element cannot contain children"),
         }
-        Ok(self.buffer)
     }
+
+    pub fn append_text(&mut self, element: &str) -> &mut Self {
+        self.append_raw_text(&escape_html_text(element))
+    }
+
+    fn write_to_string(&self, buffer: &mut String) {
+        buffer.push('<');
+        buffer.push_str(&self.tag);
+        for (k, v) in &self.attr {
+            buffer.push_str(&format!(" {k}={v:?}"));
+        }
+        buffer.push('>');
+
+        if let Some(children) = &self.children {
+            for child in children {
+                match child {
+                    HtmlElementChild::String(string) => buffer.push_str(&string),
+                    HtmlElementChild::HtmlElement(el) => el.write_to_string(buffer),
+                }
+            }
+            buffer.push_str(&format!("</{}>", self.tag));
+        }
+    }
+}
+
+impl ToString for HtmlElement {
+    fn to_string(&self) -> String {
+        let mut buffer = String::new();
+        self.write_to_string(&mut buffer);
+        buffer
+    }
+}
+
+#[derive(Clone)]
+enum HtmlElementChild {
+    String(String),
+    HtmlElement(HtmlElement),
 }
 
 fn escape_html_text(str: &str) -> String {
@@ -171,7 +144,7 @@ fn escape_html_text(str: &str) -> String {
     buffer
 }
 
-pub fn print_html_to_pdf(html_path: &str) -> anyhow::Result<Vec<u8>> {
+pub fn print_html_to_pdf(html_path: &str) -> Result<Vec<u8>> {
     let browser = Browser::new(
         LaunchOptions::default_builder()
             .build()
@@ -192,4 +165,21 @@ pub fn print_html_to_pdf(html_path: &str) -> anyhow::Result<Vec<u8>> {
     tab.navigate_to(&format!("file://{}", html_path))?
         .wait_until_navigated()?
         .print_to_pdf(Some(pdf_option))
+}
+
+pub struct HtmlString {
+    head: String,
+    body: String,
+}
+
+impl HtmlString {
+    pub fn merge(&self) -> String {
+        let mut buffer = String::new();
+        buffer.push_str("<!DOCTYPE html>");
+        buffer.push_str("<html>");
+        buffer.push_str(&self.head.clone());
+        buffer.push_str(&self.body.clone());
+        buffer.push_str("</html>");
+        buffer
+    }
 }

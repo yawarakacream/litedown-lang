@@ -1,13 +1,13 @@
+use anyhow::{bail, Result};
+
 use crate::{
-    attrs,
-    evaluator::{
-        environment::{EnvironmentEvaluator, EnvironmentEvaluatorComponents},
-        litedown::LitedownEvaluator,
-    },
+    eval_with_litedown,
+    evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
     litedown_element::EnvironmentElement,
+    utility::html::HtmlElement,
 };
 
-pub struct Title;
+pub struct Title {}
 
 impl Title {
     pub fn new() -> Title {
@@ -15,54 +15,34 @@ impl Title {
     }
 }
 
-impl EnvironmentEvaluatorComponents for Title {
-    fn open_environment(
+impl EnvironmentEvaluator for Title {
+    fn eval(
         &mut self,
-        lde: &mut LitedownEvaluator,
-        _element: &EnvironmentElement,
-    ) -> Result<(), String> {
-        lde.writer.open_element("div", attrs! {"class" => "title"})
-    }
-
-    fn close_environment(&mut self, lde: &mut LitedownEvaluator) -> Result<(), String> {
-        lde.writer.close_element("div")
-    }
-
-    fn eval_child_environment(
-        &self,
         lde: &mut LitedownEvaluator,
         element: &EnvironmentElement,
-    ) -> Result<(), String> {
-        match element.name.as_str() {
-            "author" => {
-                let mut author = Author {};
-                author.eval(lde, element)
+    ) -> Result<HtmlElement> {
+        let mut title = HtmlElement::new("div");
+        title.set_attr("class", "title");
+
+        let mut author = None;
+
+        eval_with_litedown!(
+            element to title with lde
+            @author@ (child_environment) {
+                if author.is_some() {
+                    bail!("Environment @author@ is already written");
+                }
+                let mut author_ = HtmlElement::new("div");
+                author_.set_attr("class", "author");
+                eval_with_litedown!(child_environment to author_ with lde);
+                author = Some(author_);
             }
-            _ => lde.eval_environment(element),
+        );
+
+        if let Some(author) = author {
+            title.append(author);
         }
-    }
-}
 
-struct Author;
-
-impl EnvironmentEvaluatorComponents for Author {
-    fn open_environment(
-        &mut self,
-        lde: &mut LitedownEvaluator,
-        _element: &EnvironmentElement,
-    ) -> Result<(), String> {
-        lde.writer.open_element("div", attrs! {"class" => "author"})
-    }
-
-    fn close_environment(&mut self, lde: &mut LitedownEvaluator) -> Result<(), String> {
-        lde.writer.close_element("div")
-    }
-
-    fn open_passage(&mut self, _lde: &mut LitedownEvaluator) -> Result<(), String> {
-        Ok(())
-    }
-
-    fn close_passage(&mut self, _lde: &mut LitedownEvaluator) -> Result<(), String> {
-        Ok(())
+        Ok(title)
     }
 }

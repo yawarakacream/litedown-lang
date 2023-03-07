@@ -4,6 +4,16 @@ body {
 
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
+
+  @media screen {
+    padding: 48px;
+    background-color: lightgray;
+
+    & > * {
+      box-shadow: 0 0 8px #aaa, 0 0 8px #aaa, 0 0 8px #aaa;
+      background-color: white;
+    }
+  }
 }
 
 @page {
@@ -14,17 +24,80 @@ body {
 
 p {
   margin: 1em 0;
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+  &:last-of-type {
+    margin-bottom: 0;
+  }
 }
 
-@media screen {
-  body {
-    padding: 48px;
-    background-color: lightgray;
+ul, ol {
+  width: 100%;
+  margin: 0;
+  padding-left: 3em;
+  box-sizing: border-box;
 
-    & > * {
-      box-shadow: 0 0 8px #aaa, 0 0 8px #aaa, 0 0 8px #aaa;
-      background-color: white;
+  & > li {
+    margin: 1em;
+    box-sizing: border-box;
+  }
+}
+
+ol > li {
+  padding-left: 0.5em;
+}
+
+section {
+  margin: 1em 0;
+
+  & > .header {
+    margin-bottom: 0.5em;
+    display: block;
+    font-size: 1.5em;
+  }
+}
+
+figure {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  figcaption {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    & > .tag {
+      &::after {
+        content: "：";
+      }
     }
+
+    & > .content {
+      & > p {
+        margin: 0;
+      }
+    }
+  }
+}
+
+pre {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid gray;
+
+  & > code {
+    padding: 0.5em;
+    font-family: Menlo, Monaco, 'Courier New', monospace;
+    font-size: 1em;
+    background-color: white;
+    overflow: visible;
   }
 }
 
@@ -49,29 +122,14 @@ p {
     & > .author {
       margin-top: 0.5em;
       font-size: 1.25em;
+
+      & > p {
+        margin: 0;
+      }
     }
   }
+}
 
-  .list {
-    width: 100%;
-    margin: 0;
-    padding-left: 3em;
-    box-sizing: border-box;
-
-    & > .item {
-      box-sizing: border-box;
-    }
-  }
-
-  .section {
-    margin: 1em 0;
-
-    &::before {
-      display: block;
-      font-size: 1.5em;
-
-      counter-increment: section;
-      content: counter(section) ".";
-    }
-  }
+.page-break {
+  break-after: page;
 }

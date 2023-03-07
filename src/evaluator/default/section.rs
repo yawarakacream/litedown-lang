@@ -1,41 +1,37 @@
+use anyhow::Result;
+
 use crate::{
-    attrs,
-    evaluator::{
-        environment::{EnvironmentEvaluator, EnvironmentEvaluatorComponents},
-        litedown::LitedownEvaluator,
-    },
+    eval_with_litedown,
+    evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
     litedown_element::EnvironmentElement,
+    utility::html::HtmlElement,
 };
 
-pub struct Section;
+pub struct Section {
+    index: usize,
+}
 
 impl Section {
     pub fn new() -> Box<dyn EnvironmentEvaluator> {
-        Box::new(Section {})
+        Box::new(Section { index: 1 })
     }
 }
 
-impl EnvironmentEvaluatorComponents for Section {
-    fn open_environment(
+impl EnvironmentEvaluator for Section {
+    fn eval(
         &mut self,
         lde: &mut LitedownEvaluator,
-        _element: &EnvironmentElement,
-    ) -> Result<(), String> {
-        lde.writer
-            .open_element("section", attrs! {"class" => "section"})
-    }
-
-    fn close_environment(&mut self, lde: &mut LitedownEvaluator) -> Result<(), String> {
-        lde.writer.close_element("section")
-    }
-
-    fn eval_child_environment(
-        &self,
-        lde: &mut LitedownEvaluator,
         element: &EnvironmentElement,
-    ) -> Result<(), String> {
-        match element.name.as_str() {
-            _ => lde.eval_environment(element),
-        }
+    ) -> Result<HtmlElement> {
+        let mut section = HtmlElement::new("section");
+
+        let mut header = HtmlElement::new("div");
+        header.set_attr("class", "header");
+        header.append_text(&format!("{}.", self.index));
+        self.index += 1;
+        section.append(header);
+
+        eval_with_litedown!(element to section with lde);
+        Ok(section)
     }
 }

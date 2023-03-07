@@ -1,10 +1,10 @@
+use anyhow::{bail, Result};
+
 use crate::{
-    attrs,
-    evaluator::{
-        environment::{EnvironmentEvaluator, EnvironmentEvaluatorComponents},
-        litedown::LitedownEvaluator,
-    },
-    litedown_element::{CommandParameterValue, EnvironmentElement},
+    eval_with_litedown,
+    evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
+    litedown_element::{CommandParameterValue, Element, EnvironmentElement},
+    utility::html::HtmlElement,
 };
 
 enum ListKind {
@@ -20,70 +20,48 @@ impl ListKind {
     }
 }
 
-pub struct List {
-    kind: ListKind,
-}
+pub struct List {}
 
 impl List {
     pub fn new() -> Box<dyn EnvironmentEvaluator> {
-        Box::new(List {
-            kind: ListKind::Dot,
-        })
+        Box::new(List {})
     }
 }
 
-impl EnvironmentEvaluatorComponents for List {
-    fn open_environment(
+impl EnvironmentEvaluator for List {
+    fn eval(
         &mut self,
         lde: &mut LitedownEvaluator,
         element: &EnvironmentElement,
-    ) -> Result<(), String> {
-        self.kind = match &element.parameters.get("type") {
+    ) -> Result<HtmlElement> {
+        let kind = match &element.parameters.get("type") {
             Some(p) => match p {
                 CommandParameterValue::String(p) => match p.as_str() {
                     "dot" => ListKind::Dot,
                     "number" => ListKind::Number,
-                    _ => return Err(format!("Illegal type: {}", p)),
+                    _ => bail!("Illegal type: {}", p),
                 },
-                _ => return Err(format!("Illegal type: {}", p)),
+                _ => bail!("Illegal type: {}", p),
             },
             None => ListKind::Dot,
         };
-        lde.writer
-            .open_element(self.kind.to_html_tag(), attrs! {"class" => "list"})
-    }
 
-    fn close_environment(&mut self, lde: &mut LitedownEvaluator) -> Result<(), String> {
-        lde.writer.close_element(self.kind.to_html_tag())
-    }
+        let mut list = HtmlElement::new(kind.to_html_tag());
 
-    fn eval_child_environment(
-        &self,
-        lde: &mut LitedownEvaluator,
-        element: &EnvironmentElement,
-    ) -> Result<(), String> {
-        match element.name.as_str() {
-            "item" => {
-                let mut author = Item {};
-                author.eval(lde, element)
+        for child in &element.children {
+            match child {
+                Element::Environment(child_environment) => match child_environment.name.as_str() {
+                    "item" => {
+                        let mut li = HtmlElement::new("li");
+                        eval_with_litedown!(child_environment to li with lde);
+                        list.append(li);
+                    }
+                    _ => bail!("Unknown environment: {}", child_environment.name),
+                },
+                _ => bail!("Only environment @item@ is allowed"),
             }
-            _ => Err(format!("Unknown environment: {}", element.name)),
         }
-    }
-}
 
-struct Item;
-
-impl EnvironmentEvaluatorComponents for Item {
-    fn open_environment(
-        &mut self,
-        lde: &mut LitedownEvaluator,
-        _element: &EnvironmentElement,
-    ) -> Result<(), String> {
-        lde.writer.open_element("li", attrs! {"class" => "item"})
-    }
-
-    fn close_environment(&mut self, lde: &mut LitedownEvaluator) -> Result<(), String> {
-        lde.writer.close_element("li")
+        Ok(list)
     }
 }
