@@ -3,9 +3,12 @@ use std::{fs, path::PathBuf};
 use anyhow::{bail, Result};
 
 use crate::{
-    evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
+    evaluator::{
+        environment::EnvironmentEvaluator, function::FunctionEvaluator, litedown::LitedownEvaluator,
+    },
     litedown_element::{
-        CommandParameterValue, Element, EnvironmentElement, PassageContent, PassageElement,
+        CommandParameterValue, Element, EnvironmentElement, PassageContent, PassageContentFunction,
+        PassageElement,
     },
     utility::html::HtmlElement,
 };
@@ -105,5 +108,46 @@ impl EnvironmentEvaluator for CodeBlock {
         code.append_raw_text(&inner);
         pre.append(code);
         Ok(pre)
+    }
+
+    fn get_heads(&self) -> Result<Vec<HtmlElement>> {
+        let mut highlight_style = HtmlElement::new_void("link");
+        highlight_style.set_attr("rel", "stylesheet");
+        highlight_style.set_attr(
+            "href",
+            "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css",
+        );
+
+        let mut highlight_script = HtmlElement::new("script");
+        highlight_script.set_attr(
+            "src",
+            "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js",
+        );
+        highlight_script.set_attr("onload", "hljs.highlightAll()");
+
+        Ok(vec![highlight_style, highlight_script])
+    }
+}
+
+pub struct InlineCode;
+
+impl InlineCode {
+    pub fn new() -> Box<dyn FunctionEvaluator> {
+        Box::new(InlineCode {})
+    }
+}
+
+impl FunctionEvaluator for InlineCode {
+    fn eval(
+        &mut self,
+        _: &mut LitedownEvaluator,
+        content: &PassageContentFunction,
+    ) -> Result<Option<HtmlElement>> {
+        let mut el = HtmlElement::new("code");
+        match &content.body {
+            Some(body) => el.append_text(body),
+            None => bail!("body is empty"),
+        };
+        Ok(Some(el))
     }
 }

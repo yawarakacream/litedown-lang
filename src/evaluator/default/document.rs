@@ -6,7 +6,7 @@ use crate::{
     eval_with_litedown,
     evaluator::environment::EnvironmentEvaluator,
     evaluator::litedown::LitedownEvaluator,
-    litedown_element::{CommandParameterValue, EnvironmentElement},
+    litedown_element::{stringify_number_parameter, CommandParameterValue, EnvironmentElement},
     utility::html::HtmlElement,
 };
 
@@ -88,12 +88,8 @@ impl EnvironmentEvaluator for Document {
 
         if let Some(font_size) = &element.parameters.get("font-size") {
             match font_size {
-                CommandParameterValue::Number(unit, number) => {
-                    self.font_size = number.to_string();
-                    match unit {
-                        Some(unit) => self.font_size.push_str(&unit),
-                        None => {}
-                    }
+                CommandParameterValue::Number(u, n) => {
+                    self.font_size = stringify_number_parameter(u, n);
                 }
                 _ => bail!("Illegal font-size"),
             }
@@ -137,8 +133,7 @@ impl EnvironmentEvaluator for Document {
             match math {
                 CommandParameterValue::String(string) => {
                     let string = string.to_lowercase();
-                    let string = string.as_str();
-                    self.math = match string {
+                    self.math = match string.as_str() {
                         "katex" => Some(Math::Katex),
                         "mathjax" => Some(Math::MathJax),
                         "none" => None,
@@ -163,7 +158,7 @@ impl EnvironmentEvaluator for Document {
         Ok(document)
     }
 
-    fn get_head(&self) -> Result<Vec<HtmlElement>> {
+    fn get_heads(&self) -> Result<Vec<HtmlElement>> {
         let mut result = Vec::new();
 
         //TODO よりよいサイズ指定方法を探す
@@ -199,23 +194,6 @@ impl EnvironmentEvaluator for Document {
             padding_height = self.padding.height,
         ));
         result.push(main_style);
-
-        // highlight
-        let mut highlight_style = HtmlElement::new_void("link");
-        highlight_style.set_attr("rel", "stylesheet");
-        highlight_style.set_attr(
-            "href",
-            "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css",
-        );
-        result.push(highlight_style);
-
-        let mut highlight_script = HtmlElement::new("script");
-        highlight_script.set_attr(
-            "src",
-            "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js",
-        );
-        highlight_script.set_attr("onload", "hljs.highlightAll()");
-        result.push(highlight_script);
 
         // math
         if let Some(math) = &self.math {
