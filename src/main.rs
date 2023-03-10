@@ -11,8 +11,9 @@ use std::{
 };
 
 use crate::{
-    evaluator::litedown::LitedownEvaluator, parser::environment::parse_litedown,
-    utility::html::print_html_to_pdf,
+    evaluator::litedown::LitedownEvaluator,
+    parser::environment::parse_litedown,
+    utility::{html::print_html_to_pdf, tree_string_builder::ToTreeString},
 };
 
 fn main() {
@@ -35,7 +36,7 @@ fn main() {
         match parse_litedown(source_code) {
             Ok(ast) => {
                 // ast
-                println!("{}", ast.root.stringify_as_tree().unwrap());
+                println!("{}", ast.to_tree_string());
 
                 // html
                 let evaluator = LitedownEvaluator::new(Some(source_path.clone()));
