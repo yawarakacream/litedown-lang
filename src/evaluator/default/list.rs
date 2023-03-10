@@ -20,7 +20,7 @@ impl ListKind {
     }
 }
 
-pub struct List {}
+pub struct List;
 
 impl List {
     pub fn new() -> Box<dyn EnvironmentEvaluator> {
