@@ -3,18 +3,19 @@ use std::{collections::HashMap, path::PathBuf};
 use anyhow::{bail, Result};
 
 use crate::{
-    litedown_element::{Element, EnvironmentElement, LitedownAst, PassageContentFunction},
+    litedown_element::{EnvironmentElement, LitedownAst, PassageContentFunction},
     utility::html::{Html, HtmlElement, HtmlString},
 };
 
 use super::{
     default::{
-        code::CodeBlock,
-        decorators::{BoldText, InlineMath, PageBreak},
+        code::{CodeBlock, InlineCode},
+        decorators::{BoldText, InlineMath, Link, PageBreak},
         document::Document,
         figure::Figure,
         image::Image,
         list::List,
+        minipages::MiniPages,
         section::Section,
     },
     environment::EnvironmentEvaluator,
@@ -43,13 +44,15 @@ impl LitedownEvaluator {
     }
 
     fn init_default(&mut self) {
-        self.set_environment("document", Document::new());
         self.set_environment("section", Section::new());
         self.set_environment("list", List::new());
         self.set_environment("code", CodeBlock::new());
         self.set_environment("figure", Figure::new());
+        self.set_environment("minipages", MiniPages::new());
 
+        self.set_function("link", Link::new());
         self.set_function("pagebreak", PageBreak::new());
+        self.set_function("code", InlineCode::new());
         self.set_function("math", InlineMath::new());
         self.set_function("bold", BoldText::new());
         self.set_function("image", Image::new());
@@ -74,16 +77,21 @@ impl LitedownEvaluator {
         less_script.set_attr("defer", "true");
         root.append_head(less_script);
 
-        match &ast.root {
-            Element::Environment(environment) => {
-                root.append_body(self.eval_environment(environment)?)
+        for environment in &ast.roots {
+            match environment.name.as_str() {
+                "document" => {
+                    let mut document = Document::new();
+                    root.append_body(document.eval(&mut self, &environment)?);
+                    for head in document.get_heads()? {
+                        root.append_head(head);
+                    }
+                }
+                _ => bail!("Unknown environment: {}", environment.name),
             }
-            Element::Passage(_) => panic!("Illegal element"),
-        };
+        }
 
         for environment in self.environments.values() {
-            let heads = environment.get_head()?;
-            for head in heads {
+            for head in environment.get_heads()? {
                 root.append_head(head);
             }
         }

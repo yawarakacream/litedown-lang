@@ -24,13 +24,11 @@ body {
 
 p {
   margin: 1em 0;
+  overflow-wrap: break-word;
+}
 
-  &:first-of-type {
-    margin-top: 0;
-  }
-  &:last-of-type {
-    margin-bottom: 0;
-  }
+a {
+  text-decoration: none;
 }
 
 ul, ol {
@@ -91,11 +89,20 @@ pre {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid gray;
+}
 
-  & > code {
+code {
+  font-family: Menlo, Monaco, 'Courier New', monospace;
+  font-size: 1em;
+  background-color: #f4f4f4;
+
+  :not(pre) > & {
+    padding: 0.2em;
+    border-radius: 0.2em;
+  }
+
+  pre > & {
     padding: 0.5em;
-    font-family: Menlo, Monaco, 'Courier New', monospace;
-    font-size: 1em;
     background-color: white;
     overflow: visible;
   }
@@ -132,4 +139,30 @@ pre {
 
 .page-break {
   break-after: page;
+}
+
+.minipages {
+  width: 100%;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  &.left {
+    justify-content: flex-start;
+  }
+
+  &.center {
+    justify-content: center;
+  }
+
+  &.space {
+    justify-content: space-between;
+  }
+
+  & > .page {
+    max-width: 100%;
+  }
 }
