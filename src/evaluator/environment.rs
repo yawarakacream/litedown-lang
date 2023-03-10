@@ -11,7 +11,7 @@ pub trait EnvironmentEvaluator {
         element: &EnvironmentElement,
     ) -> Result<HtmlElement>;
 
-    fn get_head(&self) -> Result<Vec<HtmlElement>> {
+    fn get_heads(&self) -> Result<Vec<HtmlElement>> {
         Ok(Vec::new())
     }
 }
