@@ -2,7 +2,7 @@ use anyhow::{bail, Result};
 
 use crate::{
     evaluator::{function::FunctionEvaluator, litedown::LitedownEvaluator},
-    litedown_element::PassageContentFunction,
+    litedown_element::{CommandParameterValue, PassageContentFunction},
     utility::html::HtmlElement,
 };
 
@@ -74,5 +74,37 @@ impl FunctionEvaluator for InlineMath {
             }
             None => bail!("The body is empty"),
         }
+    }
+}
+
+pub struct Link;
+
+impl Link {
+    pub fn new() -> Box<dyn FunctionEvaluator> {
+        Box::new(Link {})
+    }
+}
+
+impl FunctionEvaluator for Link {
+    fn eval(
+        &mut self,
+        _: &mut LitedownEvaluator,
+        content: &PassageContentFunction,
+    ) -> Result<Option<HtmlElement>> {
+        let mut anchor = HtmlElement::new("a");
+        let body = match &content.body {
+            Some(body) => body,
+            None => bail!("The body is empty"),
+        };
+        let href = match &content.parameters.get("") {
+            Some(href) => match href {
+                CommandParameterValue::String(href) => href,
+                _ => bail!("Illegal href: {}", href),
+            },
+            None => body,
+        };
+        anchor.append_raw_text(body);
+        anchor.set_attr("href", href);
+        Ok(Some(anchor))
     }
 }
