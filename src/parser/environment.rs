@@ -15,7 +15,9 @@ use crate::{
     verror,
 };
 
-pub(crate) fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&str, Element> {
+pub(crate) fn parse_environment(
+    indent: usize,
+) -> impl FnMut(&str) -> IResultV<&str, EnvironmentElement> {
     move |str: &str| {
         let (str, header) = parse_environment_header(indent)(str)?;
 
@@ -51,7 +53,7 @@ pub(crate) fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&
                                 buffer = Vec::new();
                             }
                             str = tmp.0;
-                            children.push(tmp.1);
+                            children.push(Element::Environment(tmp.1));
                         }
                         Err(_) => {
                             if tmp.1 > 0 && !buffer.is_empty() {
@@ -113,22 +115,24 @@ pub(crate) fn parse_environment(indent: usize) -> impl FnMut(&str) -> IResultV<&
             return Err(verror!("parse_environment", str, "no children"));
         }
 
-        let environment = Element::Environment(EnvironmentElement {
+        let environment = EnvironmentElement {
             name: header.name,
             parameters: header.parameters,
             children,
-        });
+        };
         Ok((str, environment))
     }
 }
 
 pub fn parse_litedown(str: &str) -> Result<LitedownAst, VerboseError<&str>> {
-    let (_, environment) = parse_environment(0)(str).finish()?;
-    // let environment = match environment {
-    //     Element::Environment(environment) => environment,
-    //     Element::Passage(_) => unreachable!(),
-    // };
-    Ok(LitedownAst { root: environment })
+    let mut str = str;
+    let mut roots = Vec::new();
+    while !str.is_empty() {
+        let tmp = parse_environment(0)(str).finish()?;
+        str = tmp.0;
+        roots.push(tmp.1);
+    }
+    Ok(LitedownAst { roots })
 }
 
 #[cfg(test)]
@@ -200,7 +204,7 @@ mod tests {
             ),
             Ok((
                 "",
-                Element::Environment(EnvironmentElement {
+                EnvironmentElement {
                     name: "name".to_string(),
                     parameters: command_params! {
                         "string" => String("あいうえお".to_string()),
@@ -211,7 +215,7 @@ mod tests {
                         PassageContent::Text(PassageContentText("\n".to_string())),
                         PassageContent::Text(PassageContentText("bbb".to_string()))
                     ]))]
-                })
+                }
             ))
         );
 
@@ -227,7 +231,7 @@ mod tests {
             ),
             Ok((
                 "",
-                Element::Environment(EnvironmentElement {
+                EnvironmentElement {
                     name: "ev".to_string(),
                     parameters: HashMap::new(),
                     children: vec![
@@ -240,7 +244,7 @@ mod tests {
                             PassageContentText("line 3".to_string())
                         )]))
                     ]
-                })
+                }
             ))
         );
 
@@ -265,7 +269,7 @@ mod tests {
             ),
             Ok((
                 "",
-                Element::Environment(EnvironmentElement {
+                EnvironmentElement {
                     name: "env1".to_string(),
                     parameters: HashMap::new(),
                     children: vec![
@@ -295,7 +299,7 @@ mod tests {
                             PassageContentText("ddd".to_string())
                         )]))
                     ]
-                })
+                }
             ))
         );
 

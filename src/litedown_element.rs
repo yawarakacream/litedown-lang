@@ -1,10 +1,10 @@
-use std::{collections::HashMap, error::Error, fmt};
+use std::{collections::HashMap, fmt};
 
-use crate::utility::tree_string_builder::TreeStringBuilder;
+use crate::utility::tree_string_builder::{ToTreeString, TreeStringBuilder};
 
 #[derive(Debug)]
 pub struct LitedownAst {
-    pub root: Element,
+    pub roots: Vec<EnvironmentElement>,
 }
 
 #[derive(Debug)]
@@ -57,68 +57,74 @@ impl fmt::Display for CommandParameterValue {
     }
 }
 
+pub fn stringify_number_parameter(unit: &Option<String>, number: &f64) -> String {
+    match unit {
+        Some(unit) => format!("{number}{unit}"),
+        None => number.to_string(),
+    }
+}
+
 #[derive(Debug)]
 pub struct EnvironmentHeader {
     pub name: String,
     pub parameters: HashMap<String, CommandParameterValue>,
 }
 
-impl Element {
-    pub fn stringify_as_tree(&self) -> Result<String, Box<dyn Error>> {
-        let mut builder = TreeStringBuilder::new();
-        self.stringify_as_tree_internal(&mut builder, 0)?;
-        Ok(builder.build())
+impl ToTreeString for LitedownAst {
+    fn write_tree_string(&self, builder: &mut TreeStringBuilder, level: usize) {
+        builder.add_node(level, "LitedownAst");
+        for root in &self.roots {
+            root.write_tree_string(builder, level + 1);
+        }
     }
+}
 
-    fn stringify_as_tree_internal(
-        &self,
-        builder: &mut TreeStringBuilder,
-        level: usize,
-    ) -> Result<(), Box<dyn Error>> {
-        match &self {
-            Element::Environment(EnvironmentElement {
-                name,
-                parameters,
-                children,
-            }) => {
-                builder.add_node(
-                    level,
-                    format!(
-                        "Environment(name = {:?}, parameters = {:?})",
-                        name, parameters
-                    ),
-                );
-                for c in children {
-                    c.stringify_as_tree_internal(builder, level + 1)?;
+impl ToTreeString for Element {
+    fn write_tree_string(&self, builder: &mut TreeStringBuilder, level: usize) {
+        match self {
+            Element::Environment(environment) => environment.write_tree_string(builder, level),
+            Element::Passage(passage) => passage.write_tree_string(builder, level),
+        }
+    }
+}
+
+impl ToTreeString for EnvironmentElement {
+    fn write_tree_string(&self, builder: &mut TreeStringBuilder, level: usize) {
+        builder.add_node(
+            level,
+            format!(
+                "Environment(name = {:?}, parameters = {:?})",
+                self.name, self.parameters
+            ),
+        );
+        for c in &self.children {
+            c.write_tree_string(builder, level + 1);
+        }
+    }
+}
+
+impl ToTreeString for PassageElement {
+    fn write_tree_string(&self, builder: &mut TreeStringBuilder, level: usize) {
+        builder.add_node(level, "Passage");
+        for c in &self.0 {
+            match c {
+                PassageContent::Text(PassageContentText(text)) => {
+                    builder.add_node(level + 1, format!("Text({:?})", text))
                 }
-            }
-            Element::Passage(PassageElement(contents)) => {
-                builder.add_node(level, "Passage");
-                for c in contents {
-                    match c {
-                        PassageContent::Text(PassageContentText(text)) => {
-                            builder.add_node(level + 1, format!("Text({:?})", text))
-                        }
-                        PassageContent::Function(PassageContentFunction {
-                            name,
-                            parameters,
-                            body,
-                        }) => {
-                            builder.add_node(
-                                level + 1,
-                                format!(
-                                    "Function(name = {:?}, parameters = {:?})",
-                                    name, parameters
-                                ),
-                            );
-                            if let Some(body) = body {
-                                builder.add_node(level + 3, format!("Body({:?})", body));
-                            }
-                        }
+                PassageContent::Function(PassageContentFunction {
+                    name,
+                    parameters,
+                    body,
+                }) => {
+                    builder.add_node(
+                        level + 1,
+                        format!("Function(name = {:?}, parameters = {:?})", name, parameters),
+                    );
+                    if let Some(body) = body {
+                        builder.add_node(level + 3, format!("Body({:?})", body));
                     }
                 }
             }
         }
-        Ok(())
     }
 }

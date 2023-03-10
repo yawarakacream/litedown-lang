@@ -53,3 +53,13 @@ impl TreeStringBuilder {
         buffer
     }
 }
+
+pub trait ToTreeString {
+    fn write_tree_string(&self, builder: &mut TreeStringBuilder, level: usize);
+
+    fn to_tree_string(&self) -> String {
+        let mut builder = TreeStringBuilder::new();
+        self.write_tree_string(&mut builder, 0);
+        builder.build()
+    }
+}
