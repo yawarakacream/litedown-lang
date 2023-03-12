@@ -74,7 +74,7 @@ fn main() {
             }
             Err(err) => {
                 eprintln!("\x1B[41mError!\x1B[0m");
-                eprintln!("{}", nom::error::convert_error(source_code, err.clone()));
+                eprintln!("{}", err);
             }
         }
     } else {

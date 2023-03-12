@@ -128,14 +128,23 @@ pub(crate) fn parse_environment(
 
 pub fn parse_litedown(
     source_path: Option<PathBuf>,
-    str: &str,
-) -> Result<LitedownAst, VerboseError<&str>> {
-    let mut str = str;
+    source_code: &str,
+) -> Result<LitedownAst, String> {
+    let mut source_code = source_code;
     let mut roots = Vec::new();
-    while !str.is_empty() {
-        let tmp = parse_environment(0)(str).finish()?;
-        str = tmp.0;
-        roots.push(tmp.1);
+    while !source_code.is_empty() {
+        match parse_environment(0)(source_code).finish() {
+            Ok(tmp) => {
+                source_code = tmp.0;
+                roots.push(tmp.1);
+            }
+            Err(err) => {
+                return Err(format!(
+                    "{}",
+                    nom::error::convert_error(source_code, err.clone())
+                ));
+            }
+        }
     }
     Ok(LitedownAst { source_path, roots })
 }
