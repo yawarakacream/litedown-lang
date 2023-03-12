@@ -83,12 +83,18 @@ code {
   }
 
   pre > & {
+    padding: 0.5em;
     background-color: white;
     font-size: 1em;
 
+    // highlight.js
     &.hljs {
       padding: 0.5em !important;
       overflow-x: visible !important;
+
+      .hljs-comment {
+        font-family: Arial, Helvetica, sans-serif;
+      }
     }
   }
 }
