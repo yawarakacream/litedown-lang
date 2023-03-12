@@ -173,6 +173,14 @@ pub struct HtmlString {
 }
 
 impl HtmlString {
+    pub fn get_head(&self) -> String {
+        self.head.clone()
+    }
+
+    pub fn get_body(&self) -> String {
+        self.body.clone()
+    }
+
     pub fn merge(&self) -> String {
         let mut buffer = String::new();
         buffer.push_str("<!DOCTYPE html>");
