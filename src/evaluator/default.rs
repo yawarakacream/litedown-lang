@@ -6,4 +6,3 @@ pub mod image;
 pub mod list;
 pub mod minipages;
 pub mod section;
-mod title;

@@ -1,9 +1,10 @@
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, path::PathBuf};
 
 use crate::utility::tree_string_builder::{ToTreeString, TreeStringBuilder};
 
 #[derive(Debug)]
 pub struct LitedownAst {
+    pub source_path: Option<PathBuf>,
     pub roots: Vec<EnvironmentElement>,
 }
 
