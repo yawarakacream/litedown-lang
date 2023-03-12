@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::{bail, Result};
 
@@ -10,7 +10,7 @@ use crate::{
 use super::{environment::EnvironmentEvaluator, function::FunctionEvaluator};
 
 pub struct LitedownEvaluator {
-    ast: Option<LitedownAst>,
+    source_path: Option<PathBuf>,
     environments: HashMap<String, Box<dyn EnvironmentEvaluator>>,
     functions: HashMap<String, Box<dyn FunctionEvaluator>>,
 }
@@ -18,20 +18,19 @@ pub struct LitedownEvaluator {
 impl LitedownEvaluator {
     pub fn new() -> Self {
         LitedownEvaluator {
-            ast: None,
+            source_path: None,
             environments: HashMap::new(),
             functions: HashMap::new(),
         }
     }
 
-    pub fn get_ast(&self) -> &LitedownAst {
-        match &self.ast {
-            Some(ast) => ast,
-            None => panic!("LitedownEvaluator is not evaluating anything"),
-        }
+    pub fn get_source_path(&self) -> &Option<PathBuf> {
+        &self.source_path
     }
 
-    pub fn eval(mut self, ast: &LitedownAst) -> Result<HtmlString> {
+    pub fn eval(mut self, source_path: PathBuf, ast: LitedownAst) -> Result<HtmlString> {
+        self.source_path = Some(source_path);
+
         let mut html = Html::new();
 
         let mut root = HtmlElement::new("div");

@@ -74,18 +74,22 @@ pre {
 
 code {
   font-family: Menlo, Monaco, 'Courier New', monospace;
-  font-size: 1em;
   background-color: #f4f4f4;
 
   :not(pre) > & {
     padding: 0.2em;
     border-radius: 0.2em;
+    font-size: 1em;
   }
 
   pre > & {
-    padding: 0.5em;
     background-color: white;
-    overflow: visible;
+    font-size: 1em;
+
+    &.hljs {
+      padding: 0.5em !important;
+      overflow-x: visible !important;
+    }
   }
 }
 

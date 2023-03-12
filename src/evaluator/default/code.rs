@@ -57,7 +57,7 @@ impl EnvironmentEvaluator for CodeBlock {
                                         }
 
                                         let path = if body.starts_with(".") {
-                                            match &lde.get_ast().source_path {
+                                            match &lde.get_source_path() {
                                                 Some(ld_path) => ld_path.with_file_name(body),
                                                 None => bail!("Cannot use relative path"),
                                             }

@@ -40,7 +40,7 @@ fn main() {
 
                 // html
                 let evaluator = Document::new_evaluator();
-                let html = match evaluator.eval(&ast) {
+                let html = match evaluator.eval(source_path.clone(), ast) {
                     Ok(html) => html.merge(),
                     Err(error) => {
                         println!("An error occurred\n{:?}", error);
