@@ -21,7 +21,7 @@ macro_rules! eval_with_litedown {
     ($element:ident to $root:ident with $lde:ident $(@$env:ident@ ($child_environment:ident) $envblock:block)*) => {
         for child in &$element.children {
             match child {
-                crate::litedown_element::Element::Environment(child_environment) => {
+                $crate::litedown_element::Element::Environment(child_environment) => {
                     match child_environment.name.as_str() {
                         $(
                             stringify!($env) => {
@@ -34,16 +34,16 @@ macro_rules! eval_with_litedown {
                         }
                     }
                 }
-                crate::litedown_element::Element::Passage(
-                    crate::litedown_element::PassageElement(contents),
+                $crate::litedown_element::Element::Passage(
+                    $crate::litedown_element::PassageElement(contents),
                 ) => {
                     let mut passage = HtmlElement::new("p");
                     for content in contents {
                         match content {
-                            crate::litedown_element::PassageContent::Text(content) => {
+                            $crate::litedown_element::PassageContent::Text(content) => {
                                 passage.append_text(&content.0);
                             }
-                            crate::litedown_element::PassageContent::Function(content) => {
+                            $crate::litedown_element::PassageContent::Function(content) => {
                                 if let Some(el) = $lde.eval_function(content)? {
                                     passage.append(el);
                                 }
