@@ -1,8 +1,3 @@
-pub mod evaluator;
-pub mod litedown_element;
-pub mod parser;
-pub mod utility;
-
 use std::{
     env,
     fs::{self, File},
@@ -10,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use crate::{
+use litedown_lang::{
     evaluator::default::document::document::Document,
     parser::environment::parse_litedown,
     utility::{html::print_html_to_pdf, tree_string_builder::ToTreeString},
