@@ -20,7 +20,7 @@ impl FunctionEvaluator for PageBreak {
         _: &mut LitedownEvaluator,
         _: &PassageContentFunction,
     ) -> Result<Option<HtmlElement>> {
-        let mut el = HtmlElement::new("div");
+        let mut el = HtmlElement::new("span");
         el.set_attr("class", "page-break");
         Ok(Some(el))
     }
