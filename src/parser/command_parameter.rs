@@ -5,7 +5,7 @@ use nom::{
 };
 
 use crate::{
-    tree::parameter::CommandParameterValue,
+    tree::parameter::{CommandParameter, CommandParameterValue},
     utility::nom::{namestr, parse_f64, ws, IResultV},
 };
 
@@ -61,14 +61,20 @@ impl CommandParameterValue {
     }
 }
 
-pub fn parse_command_parameter(str: &str) -> IResultV<&str, (String, CommandParameterValue)> {
+pub fn parse_command_parameter(str: &str) -> IResultV<&str, CommandParameter> {
     match CommandParameterValue::parse_some(str) {
-        Ok((str, value)) => Ok((str, ("".to_string(), value))),
+        Ok((str, value)) => Ok((
+            str,
+            CommandParameter {
+                key: "".to_string(),
+                value,
+            },
+        )),
         Err(_) => {
             let (str, key) = namestr(str)?;
             let (str, _) = ws(char('='))(str)?;
             let (str, value) = CommandParameterValue::parse_some(str)?;
-            Ok((str, (key, value)))
+            Ok((str, CommandParameter { key, value }))
         }
     }
 }
@@ -77,45 +83,41 @@ pub fn parse_command_parameter(str: &str) -> IResultV<&str, (String, CommandPara
 mod tests {
     use crate::{
         parser::command_parameter::parse_command_parameter,
-        tree::parameter::CommandParameterValue::{self, *},
+        tree::parameter::{CommandParameter, CommandParameterValue::*},
     };
 
     #[macro_export]
-    macro_rules! command_param {
-        ($name:expr => $value:expr) => {
-            ($name.to_string(), $value)
-        };
-    }
-
-    #[macro_export]
     macro_rules! command_params {
-        ($($name:expr => $value:expr),*) => {
-            vec![ $( crate::command_param!($name => $value), )* ].into_iter().collect()
-        };
-    }
+        () => ($crate::tree::parameter::CommandParameterContainer::new());
 
-    impl PartialEq for CommandParameterValue {
-        fn eq(&self, other: &Self) -> bool {
-            match (self, other) {
-                (Self::String(l0), Self::String(r0)) => l0 == r0,
-                (Self::Number(l0, l1), Self::Number(r0, r1)) => l0 == r0 && (l1 - r1).abs() < 1e-8,
-                _ => false,
-            }
-        }
+        ($($key:expr => $value:expr),+) => {{
+            let mut container = $crate::tree::parameter::CommandParameterContainer::new();
+            $( container.insert(&$key.to_string(), $value); )*
+            container
+        }};
     }
 
     #[test]
     fn test() {
         assert_eq!(
             parse_command_parameter("number = 1"),
-            Ok(("", command_param!("number" => Number(None, 1.0))))
+            Ok((
+                "",
+                CommandParameter {
+                    key: "number".to_string(),
+                    value: Number(None, 1.0)
+                }
+            ))
         );
 
         assert_eq!(
             parse_command_parameter("pixel = -1.2px"),
             Ok((
                 "",
-                command_param!("pixel" => Number(Some("px".to_string()), -1.2))
+                CommandParameter {
+                    key: "pixel".to_string(),
+                    value: Number(Some("px".to_string()), -1.2)
+                }
             ))
         );
 
@@ -123,7 +125,10 @@ mod tests {
             parse_command_parameter("hw = 'Hello, world!'"),
             Ok((
                 "",
-                command_param!("hw" => String("Hello, world!".to_string()))
+                CommandParameter {
+                    key: "hw".to_string(),
+                    value: String("Hello, world!".to_string())
+                }
             ))
         );
 
@@ -131,8 +136,11 @@ mod tests {
             parse_command_parameter(r#"konnnitiha = "こんにちは。\\ \"Hello\" \\""#),
             Ok((
                 "",
-                command_param!("konnnitiha" => String("こんにちは。\\ \"Hello\" \\".to_string()))
+                CommandParameter {
+                    key: "konnnitiha".to_string(),
+                    value: String("こんにちは。\\ \"Hello\" \\".to_string())
+                }
             ))
-        )
+        );
     }
 }

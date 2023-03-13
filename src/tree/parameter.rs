@@ -1,4 +1,6 @@
-use std::fmt;
+use std::{collections::HashMap, fmt};
+
+use anyhow::{bail, Result};
 
 #[derive(Debug)]
 pub enum CommandParameterValue {
@@ -18,9 +20,114 @@ impl fmt::Display for CommandParameterValue {
     }
 }
 
-pub fn stringify_number_parameter(unit: &Option<String>, number: &f64) -> String {
+pub fn stringify_number_parameter(unit: &Option<String>, number: f64) -> String {
     match unit {
         Some(unit) => format!("{number}{unit}"),
         None => number.to_string(),
+    }
+}
+
+#[derive(Debug)]
+pub struct CommandParameter {
+    pub key: String,
+    pub value: CommandParameterValue,
+}
+
+impl CommandParameter {
+    pub fn try_into_str(&self) -> Result<&str> {
+        match &self.value {
+            CommandParameterValue::String(string) => Ok(&string.as_str()),
+            _ => bail!("Invalid parameter '{}': {}", self.key, self.value),
+        }
+    }
+
+    pub fn try_into_string(&self) -> Result<&String> {
+        match &self.value {
+            CommandParameterValue::String(string) => Ok(&string),
+            _ => bail!("Invalid parameter '{}': {}", self.key, self.value),
+        }
+    }
+
+    pub fn try_into_number(&self) -> Result<(&Option<String>, f64)> {
+        match &self.value {
+            CommandParameterValue::Number(unit, number) => Ok((unit, *number)),
+            _ => bail!("Invalid parameter '{}': {}", self.key, self.value),
+        }
+    }
+
+    pub fn try_into_bare_number(&self) -> Result<f64> {
+        let (unit, number) = self.try_into_number()?;
+        match unit {
+            Some(_) => bail!(
+                "Invalid parameter '{}': {} is not bare",
+                self.key,
+                self.value
+            ),
+            None => Ok(number),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct CommandParameterContainer {
+    parameters: HashMap<String, CommandParameter>,
+}
+
+impl CommandParameterContainer {
+    pub fn new() -> CommandParameterContainer {
+        CommandParameterContainer {
+            parameters: HashMap::new(),
+        }
+    }
+
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.parameters.contains_key(key)
+    }
+
+    pub fn insert(&mut self, key: &str, value: CommandParameterValue) {
+        self.parameters.insert(
+            key.to_string(),
+            CommandParameter {
+                key: key.to_string(),
+                value,
+            },
+        );
+    }
+
+    pub fn get(&self, key: &str) -> Option<&CommandParameter> {
+        self.parameters.get(key)
+    }
+
+    pub fn try_get(&self, key: &str) -> Result<&CommandParameter> {
+        match self.get(key) {
+            Some(value) => Ok(value),
+            None => bail!("Parameter '{}' not found", key),
+        }
+    }
+}
+
+mod tests {
+    use super::{CommandParameter, CommandParameterContainer, CommandParameterValue};
+
+    impl PartialEq for CommandParameterValue {
+        fn eq(&self, other: &Self) -> bool {
+            match (self, other) {
+                (Self::String(l0), Self::String(r0)) => l0 == r0,
+                (Self::Number(l0, l1), Self::Number(r0, r1)) => l0 == r0 && (l1 - r1).abs() < 1e-8,
+                _ => false,
+            }
+        }
+    }
+
+    impl PartialEq for CommandParameter {
+        fn eq(&self, other: &Self) -> bool {
+            self.key == other.key && self.value == other.value
+        }
+    }
+
+    impl PartialEq for CommandParameterContainer {
+        fn eq(&self, other: &Self) -> bool {
+            self.parameters == other.parameters
+        }
     }
 }

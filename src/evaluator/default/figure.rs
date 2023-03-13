@@ -5,7 +5,7 @@ use anyhow::{bail, Result};
 use crate::{
     eval_with_litedown,
     evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
-    tree::{element::EnvironmentElement, parameter::CommandParameterValue},
+    tree::element::EnvironmentElement,
     utility::html::HtmlElement,
 };
 
@@ -35,14 +35,7 @@ impl EnvironmentEvaluator for Figure {
             element to figure with lde;
             environment: {
                 caption: (child_environment) => {
-                    let tag = match &child_environment.parameters.get("tag") {
-                        Some(p) => match p {
-                            CommandParameterValue::String(string) => string,
-                            _ => bail!("Illegal tag: {}", p),
-                        },
-                        None => bail!("tag must be set"),
-                    };
-
+                    let tag = child_environment.parameters.try_get("tag")?.try_into_string()?;
                     let tag_index = self.tag_indices.entry(tag.to_string()).or_insert(1);
                     let mut figcaption_tag = HtmlElement::new("div");
                     figcaption_tag.set_attr("class", "tag");

@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use crate::utility::tree_string_builder::{ToTreeString, TreeStringBuilder};
 
-use super::parameter::CommandParameterValue;
+use super::parameter::CommandParameterContainer;
 
 #[derive(Debug)]
 pub enum LitedownElement {
@@ -13,7 +11,7 @@ pub enum LitedownElement {
 #[derive(Debug)]
 pub struct EnvironmentElement {
     pub name: String,
-    pub parameters: HashMap<String, CommandParameterValue>,
+    pub parameters: CommandParameterContainer,
     pub children: Vec<LitedownElement>,
 }
 
@@ -34,14 +32,14 @@ pub struct PassageContentText(pub String);
 #[derive(Debug)]
 pub struct PassageContentFunction {
     pub name: String,
-    pub parameters: HashMap<String, CommandParameterValue>,
+    pub parameters: CommandParameterContainer,
     pub body: Option<String>,
 }
 
 #[derive(Debug)]
 pub struct EnvironmentHeader {
     pub name: String,
-    pub parameters: HashMap<String, CommandParameterValue>,
+    pub parameters: CommandParameterContainer,
 }
 
 impl ToTreeString for LitedownElement {
@@ -88,7 +86,7 @@ impl ToTreeString for PassageElement {
                         format!("Function(name = {:?}, parameters = {:?})", name, parameters),
                     );
                     if let Some(body) = body {
-                        builder.add_node(level + 3, format!("Body({:?})", body));
+                        builder.add_node(level + 2, format!("Body({:?})", body));
                     }
                 }
             }

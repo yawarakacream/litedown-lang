@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use nom::{
     character::complete::{anychar, char, line_ending, space0},
     combinator::eof,
@@ -8,7 +6,10 @@ use nom::{
 
 use crate::{
     parser::command_parameter::parse_command_parameter,
-    tree::element::{PassageContent, PassageContentFunction, PassageContentText},
+    tree::{
+        element::{PassageContent, PassageContentFunction, PassageContentText},
+        parameter::{CommandParameter, CommandParameterContainer},
+    },
     utility::nom::{namestr, IResultV},
     verror,
 };
@@ -51,18 +52,18 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Vec<PassageContent>> {
             let parameters = match char::<&str, VerboseError<&str>>('[')(str) {
                 Ok(tmp) => {
                     str = tmp.0;
-                    let mut parameters = HashMap::new();
+                    let mut parameters = CommandParameterContainer::new();
 
                     loop {
                         str = space0(str)?.0;
 
                         let tmp = parse_command_parameter(str)?;
-                        let (key, value) = tmp.1;
+                        let CommandParameter { key, value } = tmp.1;
                         if parameters.contains_key(&key) {
                             return Err(verror!("parse_passage_line", str, "duplicate parameter"));
                         }
                         str = tmp.0;
-                        parameters.insert(key, value);
+                        parameters.insert(&key, value);
 
                         str = space0(str)?.0;
 
@@ -84,7 +85,7 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Vec<PassageContent>> {
 
                     parameters
                 }
-                Err(_) => HashMap::new(),
+                Err(_) => CommandParameterContainer::new(),
             };
 
             let body = match char::<&str, VerboseError<&str>>('{')(str) {
@@ -147,7 +148,6 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Vec<PassageContent>> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
 
     use crate::{
         command_params,
@@ -187,7 +187,7 @@ mod tests {
                 "",
                 vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
-                    parameters: HashMap::new(),
+                    parameters: command_params! {},
                     body: None,
                 })]
             ))
@@ -213,7 +213,7 @@ mod tests {
                 "",
                 vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
-                    parameters: HashMap::new(),
+                    parameters: command_params! {},
                     body: Some("bbb".to_string())
                 })]
             ))
@@ -241,7 +241,7 @@ mod tests {
                     PassageContent::Text(PassageContentText("left ".to_string())),
                     PassageContent::Function(PassageContentFunction {
                         name: "func".to_string(),
-                        parameters: HashMap::new(),
+                        parameters: command_params! {},
                         body: None,
                     }),
                     PassageContent::Text(PassageContentText(" right".to_string()))

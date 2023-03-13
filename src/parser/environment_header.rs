@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use nom::{
     character::complete::{char, line_ending, space0},
     error::VerboseError,
@@ -7,7 +5,10 @@ use nom::{
 
 use crate::{
     parser::command_parameter::parse_command_parameter,
-    tree::element::EnvironmentHeader,
+    tree::{
+        element::EnvironmentHeader,
+        parameter::{CommandParameter, CommandParameterContainer},
+    },
     utility::nom::{count_indent, namestr, pass_blank_lines0, IResultV},
     verror,
 };
@@ -47,13 +48,13 @@ pub fn parse_environment_header(
 
         let (str, parameters) = match char::<&str, VerboseError<&str>>('[')(str) {
             Ok((mut str, _)) => {
-                let mut parameters = HashMap::new();
+                let mut parameters = CommandParameterContainer::new();
 
                 loop {
                     str = pass_spaces_in_environment_header(indent, str)?.0;
 
                     let tmp = parse_command_parameter(str)?;
-                    let (key, value) = tmp.1;
+                    let CommandParameter { key, value } = tmp.1;
                     if parameters.contains_key(&key) {
                         return Err(verror!(
                             "parse_environment_header",
@@ -62,7 +63,7 @@ pub fn parse_environment_header(
                         ));
                     }
                     str = tmp.0;
-                    parameters.insert(key, value);
+                    parameters.insert(&key, value);
 
                     str = space0(str)?.0;
 
@@ -84,7 +85,7 @@ pub fn parse_environment_header(
 
                 (str, parameters)
             }
-            Err(_) => (str, HashMap::new()),
+            Err(_) => (str, CommandParameterContainer::new()),
         };
 
         let (str, _) = char('@')(str)?;

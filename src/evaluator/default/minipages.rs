@@ -5,7 +5,7 @@ use crate::{
     evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
     tree::{
         element::{EnvironmentElement, LitedownElement},
-        parameter::{stringify_number_parameter, CommandParameterValue},
+        parameter::stringify_number_parameter,
     },
     utility::html::HtmlElement,
 };
@@ -42,31 +42,22 @@ impl EnvironmentEvaluator for MiniPages {
         let mut minipages = HtmlElement::new("div");
 
         let columns = match element.parameters.get("columns") {
-            Some(p) => match p {
-                CommandParameterValue::Number(unit, number) => {
-                    if unit.is_some() {
-                        bail!("'columns' must be just a number");
-                    }
-                    let number = *number as i64;
-                    if number < 0 {
-                        bail!("'columns' must not be negative");
-                    }
-                    let number = number as usize;
-                    Some(number)
+            Some(parameter) => {
+                let number = parameter.try_into_bare_number()?;
+                let number = number as isize;
+                if 0 < number {
+                    bail!("Invalid parameter 'columns': must be positive");
                 }
-                _ => bail!("Illegal 'columns': {}", p),
-            },
-            _ => None,
+                Some(number as usize)
+            }
+            None => None,
         };
 
         let alignment = match &element.parameters.get("alignment") {
-            Some(p) => match p {
-                CommandParameterValue::String(p) => match p.as_str() {
-                    "center" => Alignment::Center,
-                    "space" => Alignment::Space,
-                    _ => bail!("Illegal 'alignment': {}", p),
-                },
-                _ => bail!("Illegal 'alignment': {}", p),
+            Some(parameter) => match parameter.try_into_str()? {
+                "center" => Alignment::Center,
+                "space" => Alignment::Space,
+                _ => bail!("Invalid parameter 'alignment'"),
             },
             None => match columns {
                 Some(_) => Alignment::Left,
@@ -77,25 +68,22 @@ impl EnvironmentEvaluator for MiniPages {
         minipages.set_attr("class", &format!("minipages {}", alignment.to_css_class()));
 
         let padding = match element.parameters.get("padding") {
-            Some(p) => match p {
-                CommandParameterValue::Number(u, n) => stringify_number_parameter(u, n),
-                _ => bail!("Illegal 'padding': {}", p),
-            },
-            _ => "0px".to_string(),
+            Some(parameter) => {
+                let (unit, number) = parameter.try_into_number()?;
+                stringify_number_parameter(unit, number)
+            }
+            None => "0px".to_string(),
         };
 
         let gap = match element.parameters.get("gap") {
-            Some(p) => {
+            Some(parameter) => {
                 if columns.is_none() {
                     bail!("Cannot use 'gap' without 'columns'");
                 }
-
-                match p {
-                    CommandParameterValue::Number(u, n) => stringify_number_parameter(u, n),
-                    _ => bail!("Illegal 'gap': {}", p),
-                }
+                let (unit, number) = parameter.try_into_number()?;
+                stringify_number_parameter(unit, number)
             }
-            _ => "0px".to_string(),
+            None => "0px".to_string(),
         };
 
         minipages.set_attr("style", &format!("padding: 0 {padding}; gap: {gap};"));
@@ -109,26 +97,22 @@ impl EnvironmentEvaluator for MiniPages {
                             page.set_attr("class", "page");
 
                             let width = match child_environment.parameters.get("width") {
-                            Some(p) => {
-                                match columns {
-                                    Some(_) => bail!("Cannot specify 'width' on @page@ with 'columns' on @minipages@"),
-                                    None => {
-                                        match p {
-                                            CommandParameterValue::Number(u, n) => {
-                                                stringify_number_parameter(u, n)
-                                            }
-                                            _ => bail!("Illegal width: {}", p),
+                                Some(parameter) => {
+                                    match columns {
+                                        Some(_) => bail!("Cannot specify 'width' on @page@ with 'columns' on @minipages@"),
+                                        None => {
+                                            let (unit, number) = parameter.try_into_number()?;
+                                            stringify_number_parameter(unit, number)
                                         }
                                     }
                                 }
-                            }
-                            None => {
-                                match columns {
-                                    Some(columns) => format!("calc((100% - {} * {}) / {})", gap, columns - 1, columns),
-                                    None => bail!("Either 'columns' on @minipages@ or 'width' on @page@ is needed")
+                                None => {
+                                    match columns {
+                                        Some(columns) => format!("calc((100% - {} * {}) / {})", gap, columns - 1, columns),
+                                        None => bail!("Either 'columns' on @minipages@ or 'width' on @page@ is needed")
+                                    }
                                 }
-                            }
-                        };
+                            };
                             page.set_attr("style", &format!("width: {width};"));
 
                             eval_with_litedown!(child_environment to page with lde);

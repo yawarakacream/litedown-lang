@@ -63,6 +63,7 @@ macro_rules! eval_with_litedown {
                             }
                         }
                     }
+                    $root.append(passage);
                 }
             }
         }

@@ -159,8 +159,6 @@ pub fn parse_litedown(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use nom::error::{VerboseError, VerboseErrorKind};
 
     use crate::{
@@ -207,7 +205,7 @@ mod tests {
                     PassageContent::Text(PassageContentText("left ".to_string())),
                     PassageContent::Function(PassageContentFunction {
                         name: "func".to_string(),
-                        parameters: HashMap::new(),
+                        parameters: command_params! {},
                         body: Some("body".to_string())
                     }),
                     PassageContent::Text(PassageContentText(" right".to_string()))
@@ -258,7 +256,7 @@ mod tests {
                 "",
                 EnvironmentElement {
                     name: "ev".to_string(),
-                    parameters: HashMap::new(),
+                    parameters: command_params! {},
                     children: vec![
                         LitedownElement::Passage(PassageElement {
                             contents: vec![
@@ -300,7 +298,7 @@ mod tests {
                 "",
                 EnvironmentElement {
                     name: "env1".to_string(),
-                    parameters: HashMap::new(),
+                    parameters: command_params! {},
                     children: vec![
                         LitedownElement::Passage(PassageElement {
                             contents: vec![
@@ -316,7 +314,7 @@ mod tests {
                         }),
                         LitedownElement::Environment(EnvironmentElement {
                             name: "env2".to_string(),
-                            parameters: HashMap::new(),
+                            parameters: command_params! {},
                             children: vec![
                                 LitedownElement::Passage(PassageElement {
                                     contents: vec![PassageContent::Text(PassageContentText(

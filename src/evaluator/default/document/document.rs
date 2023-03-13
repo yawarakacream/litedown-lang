@@ -6,10 +6,7 @@ use crate::{
     eval_with_litedown,
     evaluator::environment::EnvironmentEvaluator,
     evaluator::{default::document::title::Title, litedown::LitedownEvaluator},
-    tree::{
-        element::EnvironmentElement,
-        parameter::{stringify_number_parameter, CommandParameterValue},
-    },
+    tree::{element::EnvironmentElement, parameter::stringify_number_parameter},
     utility::html::HtmlElement,
 };
 
@@ -97,87 +94,62 @@ impl EnvironmentEvaluator for Document {
         lde: &mut LitedownEvaluator,
         element: &EnvironmentElement,
     ) -> Result<HtmlElement> {
-        if let Some(size) = &element.parameters.get("size") {
-            match size {
-                CommandParameterValue::String(string) => {
-                    let string = string.to_lowercase();
-                    let (size, orientation) = match string.find('-') {
-                        Some(hyphen) => (&string[..hyphen], Some(&string[(hyphen + 1)..])),
-                        None => (string.as_str(), None),
-                    };
-                    self.size = match size {
-                        "a4" => Size {
-                            width: "210mm".to_string(),
-                            height: "297mm".to_string(),
-                        },
-                        _ => bail!("Illegal size"),
-                    };
-                    if let Some(orientation) = orientation {
-                        match orientation {
-                            "portrait" => {}
-                            "landscape" => swap(&mut self.size.width, &mut self.size.height),
-                            _ => bail!("Illegal size orientation: {}", orientation),
-                        }
-                    }
+        if let Some(string) = &element.parameters.get("size") {
+            let string = string.try_into_string()?;
+            let string = string.to_lowercase();
+            let (size, orientation) = match string.find('-') {
+                Some(hyphen) => (&string[..hyphen], Some(&string[(hyphen + 1)..])),
+                None => (string.as_str(), None),
+            };
+            self.size = match size {
+                "a4" => Size {
+                    width: "210mm".to_string(),
+                    height: "297mm".to_string(),
+                },
+                _ => bail!("Invalid size"),
+            };
+            if let Some(orientation) = orientation {
+                match orientation {
+                    "portrait" => {}
+                    "landscape" => swap(&mut self.size.width, &mut self.size.height),
+                    _ => bail!("Invalid size orientation: {}", orientation),
                 }
-                _ => bail!("Illegal size"),
             }
         }
 
         if let Some(font_size) = &element.parameters.get("font-size") {
-            match font_size {
-                CommandParameterValue::Number(u, n) => {
-                    self.font_size = stringify_number_parameter(u, n);
-                }
-                _ => bail!("Illegal font-size"),
-            }
+            let (u, n) = font_size.try_into_number()?;
+            self.font_size = stringify_number_parameter(u, n);
         }
 
         if let Some(font_family) = &element.parameters.get("font-family") {
-            match font_family {
-                CommandParameterValue::String(string) => {
-                    let string = string.as_str();
-                    self.font_family = match string {
-                        "serif" => FontFamily::Serif,
-                        "sans-serif" => FontFamily::SansSerif,
-                        _ => bail!("Illegal font-family"),
-                    }
-                }
-                _ => bail!("Illegal font-family"),
-            }
+            self.font_family = match font_family.try_into_str()? {
+                "serif" => FontFamily::Serif,
+                "sans-serif" => FontFamily::SansSerif,
+                _ => bail!("Invalid font-family"),
+            };
         }
 
-        if let Some(padding) = &element.parameters.get("padding") {
-            match padding {
-                CommandParameterValue::String(string) => {
-                    let splitted = string.split(' ').collect::<Vec<_>>();
-                    self.padding = match splitted.len() {
-                        1 => Size {
-                            width: splitted[0].to_string(),
-                            height: splitted[0].to_string(),
-                        },
-                        2 => Size {
-                            width: splitted[1].to_string(),
-                            height: splitted[0].to_string(),
-                        },
-                        _ => bail!("Illegal padding"),
-                    }
-                }
-                _ => bail!("Illegal padding"),
+        if let Some(string) = &element.parameters.get("padding") {
+            let splitted = string.try_into_string()?.split(' ').collect::<Vec<_>>();
+            self.padding = match splitted.len() {
+                1 => Size {
+                    width: splitted[0].to_string(),
+                    height: splitted[0].to_string(),
+                },
+                2 => Size {
+                    width: splitted[1].to_string(),
+                    height: splitted[0].to_string(),
+                },
+                _ => bail!("Invalid padding"),
             }
         }
 
         if let Some(math) = &element.parameters.get("math") {
-            match math {
-                CommandParameterValue::String(string) => {
-                    let string = string.to_lowercase();
-                    self.math = match string.as_str() {
-                        "katex" => Some(Math::Katex),
-                        "mathjax" => Some(Math::MathJax),
-                        "none" => None,
-                        _ => bail!("Illegal math"),
-                    }
-                }
+            self.math = match math.try_into_str()? {
+                "katex" => Some(Math::Katex),
+                "mathjax" => Some(Math::MathJax),
+                "none" => None,
                 _ => bail!("Illegal math"),
             }
         }

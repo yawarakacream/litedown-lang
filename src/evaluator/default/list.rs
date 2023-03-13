@@ -3,10 +3,7 @@ use anyhow::{bail, Result};
 use crate::{
     eval_with_litedown,
     evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
-    tree::{
-        element::{EnvironmentElement, LitedownElement},
-        parameter::CommandParameterValue,
-    },
+    tree::element::{EnvironmentElement, LitedownElement},
     utility::html::HtmlElement,
 };
 
@@ -38,13 +35,10 @@ impl EnvironmentEvaluator for List {
         element: &EnvironmentElement,
     ) -> Result<HtmlElement> {
         let kind = match &element.parameters.get("type") {
-            Some(p) => match p {
-                CommandParameterValue::String(p) => match p.as_str() {
-                    "dot" => ListKind::Dot,
-                    "number" => ListKind::Number,
-                    _ => bail!("Illegal type: {}", p),
-                },
-                _ => bail!("Illegal type: {}", p),
+            Some(p) => match p.try_into_str()? {
+                "dot" => ListKind::Dot,
+                "number" => ListKind::Number,
+                _ => bail!("Invalid type"),
             },
             None => ListKind::Dot,
         };

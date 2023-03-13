@@ -2,7 +2,7 @@ use anyhow::{bail, Result};
 
 use crate::{
     evaluator::{function::FunctionEvaluator, litedown::LitedownEvaluator},
-    tree::{element::PassageContentFunction, parameter::CommandParameterValue},
+    tree::element::PassageContentFunction,
     utility::html::HtmlElement,
 };
 
@@ -74,15 +74,14 @@ impl FunctionEvaluator for Link {
         let mut anchor = HtmlElement::new("a");
         let body = match &content.body {
             Some(body) => body,
-            None => bail!("The body is empty"),
+            None => bail!("Body is empty"),
         };
+
         let href = match &content.parameters.get("") {
-            Some(href) => match href {
-                CommandParameterValue::String(href) => href,
-                _ => bail!("Illegal href: {}", href),
-            },
+            Some(href) => href.try_into_string()?,
             None => body,
         };
+
         anchor.append_raw_text(body);
         anchor.set_attr("href", href);
         Ok(Some(anchor))

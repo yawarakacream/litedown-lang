@@ -6,12 +6,8 @@ use crate::{
     evaluator::{
         environment::EnvironmentEvaluator, function::FunctionEvaluator, litedown::LitedownEvaluator,
     },
-    tree::{
-        element::{
-            EnvironmentElement, LitedownElement, PassageContent, PassageContentFunction,
-            PassageElement,
-        },
-        parameter::CommandParameterValue,
+    tree::element::{
+        EnvironmentElement, LitedownElement, PassageContent, PassageContentFunction, PassageElement,
     },
     utility::html::HtmlElement,
 };
@@ -31,9 +27,8 @@ impl EnvironmentEvaluator for CodeBlock {
         element: &EnvironmentElement,
     ) -> Result<HtmlElement> {
         let mut lang = match &element.parameters.get("lang") {
-            Some(CommandParameterValue::String(lang)) => Some(lang.clone()),
+            Some(lang) => Some(lang.try_into_string()?.clone()),
             None => None,
-            _ => bail!("Illegal lang"),
         };
 
         let mut inner = None;
