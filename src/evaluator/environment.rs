@@ -40,7 +40,7 @@ macro_rules! eval_with_litedown {
                 $crate::litedown_element::Element::Passage(
                     $crate::litedown_element::PassageElement(contents),
                 ) => {
-                    let mut passage = HtmlElement::new("p");
+                    let mut passage = $crate::utility::html::HtmlElement::new("p");
                     for content in contents {
                         match content {
                             $crate::litedown_element::PassageContent::Text(content) => {
@@ -63,7 +63,6 @@ macro_rules! eval_with_litedown {
                             }
                         }
                     }
-                    $root.append(passage);
                 }
             }
         }
