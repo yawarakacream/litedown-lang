@@ -18,7 +18,10 @@ pub trait EnvironmentEvaluator {
 
 #[macro_export]
 macro_rules! eval_with_litedown {
-    ($element:ident to $root:ident with $lde:ident $(@$env:ident@ ($child_environment:ident) $envblock:block)*) => {
+    ($element:ident to $root:ident with $lde:ident;
+        environment: { $($env:ident: ($child_environment:ident) => $envblock:block)* },
+        function: { $($func:ident: ($func_content:ident) => $funcblock:block)* }
+    ) => {
         for child in &$element.children {
             match child {
                 $crate::litedown_element::Element::Environment(child_environment) => {
@@ -44,9 +47,19 @@ macro_rules! eval_with_litedown {
                                 passage.append_text(&content.0);
                             }
                             $crate::litedown_element::PassageContent::Function(content) => {
-                                if let Some(el) = $lde.eval_function(content)? {
-                                    passage.append(el);
-                                }
+                                match content.name.as_str() {
+                                    $(
+                                        stringify!($func) => {
+                                            let $func_content = content;
+                                            $funcblock;
+                                        }
+                                    )*
+                                    _ => {
+                                        if let Some(el) = $lde.eval_function(content)? {
+                                            passage.append(el);
+                                        }
+                                    }
+                                };
                             }
                         }
                     }
@@ -54,5 +67,27 @@ macro_rules! eval_with_litedown {
                 }
             }
         }
+    };
+
+    ($element:ident to $root:ident with $lde:ident) => {
+        eval_with_litedown!($element to $root with $lde; environment: {}, function: {});
+    };
+
+    ($element:ident to $root:ident with $lde:ident;
+        environment: { $($env:ident: ($child_environment:ident) => $envblock:block)* }
+    ) => {
+        eval_with_litedown!($element to $root with $lde;
+            environment: { $($env: ($child_environment) => $envblock)* },
+            function: {}
+        );
+    };
+
+    ($element:ident to $root:ident with $lde:ident;
+        function: { $($func:ident: ($func_content:ident) => $funcblock:block)* }
+    ) => {
+        eval_with_litedown!($element to $root with $lde;
+            environment: {},
+            function: { $($func: ($func_content) => $funcblock)* }
+        );
     };
 }

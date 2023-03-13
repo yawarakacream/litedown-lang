@@ -32,30 +32,32 @@ impl EnvironmentEvaluator for Figure {
         let mut caption = None;
 
         eval_with_litedown!(
-            element to figure with lde
-            @caption@ (child_environment) {
-                let tag = match &child_environment.parameters.get("tag") {
-                    Some(p) => match p {
-                        CommandParameterValue::String(string) => string,
-                        _ => bail!("Illegal tag: {}", p),
-                    },
-                    None => bail!("tag must be set"),
-                };
+            element to figure with lde;
+            environment: {
+                caption: (child_environment) => {
+                    let tag = match &child_environment.parameters.get("tag") {
+                        Some(p) => match p {
+                            CommandParameterValue::String(string) => string,
+                            _ => bail!("Illegal tag: {}", p),
+                        },
+                        None => bail!("tag must be set"),
+                    };
 
-                let tag_index = self.tag_indices.entry(tag.to_string()).or_insert(1);
-                let mut figcaption_tag = HtmlElement::new("div");
-                figcaption_tag.set_attr("class", "tag");
-                figcaption_tag.append_text(&format!("{tag} {tag_index}"));
-                *tag_index += 1;
+                    let tag_index = self.tag_indices.entry(tag.to_string()).or_insert(1);
+                    let mut figcaption_tag = HtmlElement::new("div");
+                    figcaption_tag.set_attr("class", "tag");
+                    figcaption_tag.append_text(&format!("{tag} {tag_index}"));
+                    *tag_index += 1;
 
-                let mut figcaption_content = HtmlElement::new("div");
-                figcaption_content.set_attr("class", "content");
-                eval_with_litedown!(child_environment to figcaption_content with lde);
+                    let mut figcaption_content = HtmlElement::new("div");
+                    figcaption_content.set_attr("class", "content");
+                    eval_with_litedown!(child_environment to figcaption_content with lde);
 
-                let mut figcaption = HtmlElement::new("figcaption");
-                figcaption.append(figcaption_tag);
-                figcaption.append(figcaption_content);
-                caption = Some(figcaption);
+                    let mut figcaption = HtmlElement::new("figcaption");
+                    figcaption.append(figcaption_tag);
+                    figcaption.append(figcaption_content);
+                    caption = Some(figcaption);
+                }
             }
         );
 

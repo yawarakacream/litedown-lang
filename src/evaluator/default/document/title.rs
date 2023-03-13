@@ -27,15 +27,17 @@ impl EnvironmentEvaluator for Title {
         let mut author = None;
 
         eval_with_litedown!(
-            element to title with lde
-            @author@ (child_environment) {
-                if author.is_some() {
-                    bail!("Environment @author@ is already written");
+            element to title with lde;
+            environment: {
+                author: (child_environment) => {
+                    if author.is_some() {
+                        bail!("Environment @author@ is already written");
+                    }
+                    let mut author_ = HtmlElement::new("div");
+                    author_.set_attr("class", "author");
+                    eval_with_litedown!(child_environment to author_ with lde);
+                    author = Some(author_);
                 }
-                let mut author_ = HtmlElement::new("div");
-                author_.set_attr("class", "author");
-                eval_with_litedown!(child_environment to author_ with lde);
-                author = Some(author_);
             }
         );
 

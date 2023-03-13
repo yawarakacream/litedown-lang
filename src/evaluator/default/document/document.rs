@@ -183,10 +183,12 @@ impl EnvironmentEvaluator for Document {
         document.set_attr("class", "document");
 
         eval_with_litedown!(
-            element to document with lde
-            @title@ (child_environment) {
-                let mut title = Title::new();
-                document.append(title.eval(lde, child_environment)?);
+            element to document with lde;
+            environment: {
+                title: (child_environment) => {
+                    let mut title = Title::new();
+                    document.append(title.eval(lde, child_environment)?);
+                }
             }
         );
 
