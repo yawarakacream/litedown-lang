@@ -3,11 +3,10 @@ use std::mem::swap;
 use anyhow::{bail, Result};
 
 use crate::{
+    eval_with_litedown,
     evaluator::environment::EnvironmentEvaluator,
     evaluator::{default::document::title::Title, litedown::LitedownEvaluator},
-    litedown_element::{
-        stringify_number_parameter, CommandParameterValue, Element, EnvironmentElement,
-    },
+    litedown_element::{stringify_number_parameter, CommandParameterValue, EnvironmentElement},
     utility::html::HtmlElement,
 };
 
@@ -70,7 +69,8 @@ impl Document {
     pub fn new_evaluator() -> LitedownEvaluator {
         let mut evaluator = LitedownEvaluator::new();
 
-        evaluator.set_environment("document", Document::new());
+        evaluator.set_root_environment("document", Document::new());
+
         evaluator.set_environment("section", Section::new());
         evaluator.set_environment("list", List::new());
         evaluator.set_environment("code", CodeBlock::new());
@@ -182,18 +182,13 @@ impl EnvironmentEvaluator for Document {
         let mut document = HtmlElement::new("div");
         document.set_attr("class", "document");
 
-        for child in &element.children {
-            match child {
-                Element::Environment(child_environment) => match child_environment.name.as_str() {
-                    "title" => {
-                        let mut title = Title::new();
-                        document.append(title.eval(lde, child_environment)?);
-                    }
-                    _ => bail!("Unknown environment: {}", child_environment.name),
-                },
-                Element::Passage(_) => bail!("Cannot write passage"),
+        eval_with_litedown!(
+            element to document with lde
+            @title@ (child_environment) {
+                let mut title = Title::new();
+                document.append(title.eval(lde, child_environment)?);
             }
-        }
+        );
 
         Ok(document)
     }

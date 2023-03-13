@@ -11,14 +11,41 @@ use super::{environment::EnvironmentEvaluator, function::FunctionEvaluator};
 
 pub struct LitedownEvaluator {
     source_path: Option<PathBuf>,
+    root_environments: HashMap<String, Box<dyn EnvironmentEvaluator>>,
     environments: HashMap<String, Box<dyn EnvironmentEvaluator>>,
     functions: HashMap<String, Box<dyn FunctionEvaluator>>,
+}
+
+macro_rules! define_evaluator_function {
+    ($name:expr; $setfn:ident, $evalfn:ident; self.$evrmap:ident: $evrtype:ident, $eltype:ty => $rettype:ty) => {
+        pub fn $setfn(&mut self, key: &str, value: Box<dyn $evrtype>) {
+            let key = key.to_string();
+            if self.$evrmap.contains_key(&key) {
+                panic!("Already exists: {}", key);
+            }
+            self.$evrmap.insert(key, value);
+        }
+
+        pub fn $evalfn(&mut self, element: &$eltype) -> Result<$rettype> {
+            let key = element.name.clone();
+            let evaluator = self.$evrmap.remove(&key);
+            match evaluator {
+                Some(mut evaluator) => {
+                    let result = evaluator.eval(self, element);
+                    self.$evrmap.insert(key, evaluator);
+                    result
+                }
+                None => bail!("Unknown {}: {}", $name, element.name),
+            }
+        }
+    };
 }
 
 impl LitedownEvaluator {
     pub fn new() -> Self {
         LitedownEvaluator {
             source_path: None,
+            root_environments: HashMap::new(),
             environments: HashMap::new(),
             functions: HashMap::new(),
         }
@@ -37,7 +64,7 @@ impl LitedownEvaluator {
         root.set_attr("id", "root");
 
         for environment in &ast.roots {
-            root.append(self.eval_environment(environment)?);
+            root.append(self.eval_root_environment(environment)?);
         }
         html.append_body(root);
 
@@ -46,6 +73,12 @@ impl LitedownEvaluator {
         less_script.set_attr("src", "https://cdn.jsdelivr.net/npm/less");
         less_script.set_attr("defer", "true");
         html.append_head(less_script);
+
+        for environment in self.root_environments.values() {
+            for head in environment.get_heads()? {
+                html.append_head(head);
+            }
+        }
 
         for environment in self.environments.values() {
             for head in environment.get_heads()? {
@@ -56,48 +89,12 @@ impl LitedownEvaluator {
         Ok(html.to_string())
     }
 
-    pub fn set_environment(&mut self, key: &str, value: Box<dyn EnvironmentEvaluator>) {
-        let key = key.to_string();
-        if self.environments.contains_key(&key) {
-            panic!("Already exists: {}", key);
-        }
-        self.environments.insert(key, value);
-    }
+    define_evaluator_function!("root environment"; set_root_environment, eval_root_environment;
+        self.root_environments: EnvironmentEvaluator, EnvironmentElement => HtmlElement);
 
-    pub fn eval_environment(&mut self, element: &EnvironmentElement) -> Result<HtmlElement> {
-        let key = element.name.clone();
-        let environment = self.environments.remove(&key);
-        match environment {
-            Some(mut environment) => {
-                let result = environment.eval(self, element);
-                self.environments.insert(key, environment);
-                result
-            }
-            None => bail!("Unknown environment: {}", element.name),
-        }
-    }
+    define_evaluator_function!("environment"; set_environment, eval_environment;
+        self.environments: EnvironmentEvaluator, EnvironmentElement => HtmlElement);
 
-    pub fn set_function(&mut self, key: &str, value: Box<dyn FunctionEvaluator>) {
-        let key = key.to_string();
-        if self.functions.contains_key(&key) {
-            panic!("Already exists: {}", key);
-        }
-        self.functions.insert(key, value);
-    }
-
-    pub fn eval_function(
-        &mut self,
-        content: &PassageContentFunction,
-    ) -> Result<Option<HtmlElement>> {
-        let key = content.name.clone();
-        let function = self.functions.remove(&key);
-        match function {
-            Some(mut function) => {
-                let result = function.eval(self, content);
-                self.functions.insert(key, function);
-                result
-            }
-            None => bail!("Unknown function: {}", content.name),
-        }
-    }
+    define_evaluator_function!("function"; set_function, eval_function;
+        self.functions: FunctionEvaluator, PassageContentFunction => Option<HtmlElement>);
 }
