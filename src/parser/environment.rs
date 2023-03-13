@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use anyhow::{anyhow, Result};
+
 use nom::{
     character::complete::{line_ending, space0},
     combinator::eof,
@@ -134,10 +136,7 @@ pub(crate) fn parse_environment(
     }
 }
 
-pub fn parse_litedown(
-    source_path: Option<PathBuf>,
-    source_code: &str,
-) -> Result<LitedownAst, String> {
+pub fn parse_litedown(source_path: Option<PathBuf>, source_code: &str) -> Result<LitedownAst> {
     let mut source_code = source_code;
     let mut roots = Vec::new();
     while !source_code.is_empty() {
@@ -147,7 +146,7 @@ pub fn parse_litedown(
                 roots.push(tmp.1);
             }
             Err(err) => {
-                return Err(format!(
+                return Err(anyhow!(
                     "{}",
                     nom::error::convert_error(source_code, err.clone())
                 ));
