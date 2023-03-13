@@ -7,8 +7,8 @@ use crate::{
         environment::EnvironmentEvaluator, function::FunctionEvaluator, litedown::LitedownEvaluator,
     },
     litedown_element::{
-        CommandParameterValue, Element, EnvironmentElement, PassageContent, PassageContentFunction,
-        PassageElement,
+        CommandParameterValue, EnvironmentElement, LitedownElement, PassageContent,
+        PassageContentFunction, PassageElement,
     },
     utility::html::HtmlElement,
 };
@@ -37,10 +37,10 @@ impl EnvironmentEvaluator for CodeBlock {
 
         for child in &element.children {
             match child {
-                Element::Environment(child_environment) => {
+                LitedownElement::Environment(child_environment) => {
                     bail!("Unknown environment: {}", child_environment.name)
                 }
-                Element::Passage(PassageElement(contents)) => {
+                LitedownElement::Passage(PassageElement { contents }) => {
                     for content in contents {
                         match content {
                             PassageContent::Text(content) => {

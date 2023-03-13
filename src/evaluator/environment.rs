@@ -24,7 +24,7 @@ macro_rules! eval_with_litedown {
     ) => {
         for child in &$element.children {
             match child {
-                $crate::litedown_element::Element::Environment(child_environment) => {
+                $crate::litedown_element::LitedownElement::Environment(child_environment) => {
                     match child_environment.name.as_str() {
                         $(
                             stringify!($env) => {
@@ -37,8 +37,8 @@ macro_rules! eval_with_litedown {
                         }
                     }
                 }
-                $crate::litedown_element::Element::Passage(
-                    $crate::litedown_element::PassageElement(contents),
+                $crate::litedown_element::LitedownElement::Passage(
+                    $crate::litedown_element::PassageElement { contents },
                 ) => {
                     let mut passage = $crate::utility::html::HtmlElement::new("p");
                     for content in contents {

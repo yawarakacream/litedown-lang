@@ -3,7 +3,7 @@ use anyhow::{bail, Result};
 use crate::{
     eval_with_litedown,
     evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
-    litedown_element::{CommandParameterValue, Element, EnvironmentElement},
+    litedown_element::{CommandParameterValue, EnvironmentElement, LitedownElement},
     utility::html::HtmlElement,
 };
 
@@ -50,14 +50,16 @@ impl EnvironmentEvaluator for List {
 
         for child in &element.children {
             match child {
-                Element::Environment(child_environment) => match child_environment.name.as_str() {
-                    "item" => {
-                        let mut li = HtmlElement::new("li");
-                        eval_with_litedown!(child_environment to li with lde);
-                        list.append(li);
+                LitedownElement::Environment(child_environment) => {
+                    match child_environment.name.as_str() {
+                        "item" => {
+                            let mut li = HtmlElement::new("li");
+                            eval_with_litedown!(child_environment to li with lde);
+                            list.append(li);
+                        }
+                        _ => bail!("Unknown environment: {}", child_environment.name),
                     }
-                    _ => bail!("Unknown environment: {}", child_environment.name),
-                },
+                }
                 _ => bail!("Only environment @item@ is allowed"),
             }
         }

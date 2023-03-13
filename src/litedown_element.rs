@@ -9,7 +9,7 @@ pub struct LitedownAst {
 }
 
 #[derive(Debug)]
-pub enum Element {
+pub enum LitedownElement {
     Environment(EnvironmentElement),
     Passage(PassageElement),
 }
@@ -18,11 +18,13 @@ pub enum Element {
 pub struct EnvironmentElement {
     pub name: String,
     pub parameters: HashMap<String, CommandParameterValue>,
-    pub children: Vec<Element>,
+    pub children: Vec<LitedownElement>,
 }
 
 #[derive(Debug)]
-pub struct PassageElement(pub Vec<PassageContent>);
+pub struct PassageElement {
+    pub contents: Vec<PassageContent>,
+}
 
 #[derive(Debug)]
 pub enum PassageContent {
@@ -80,11 +82,13 @@ impl ToTreeString for LitedownAst {
     }
 }
 
-impl ToTreeString for Element {
+impl ToTreeString for LitedownElement {
     fn write_tree_string(&self, builder: &mut TreeStringBuilder, level: usize) {
         match self {
-            Element::Environment(environment) => environment.write_tree_string(builder, level),
-            Element::Passage(passage) => passage.write_tree_string(builder, level),
+            LitedownElement::Environment(environment) => {
+                environment.write_tree_string(builder, level)
+            }
+            LitedownElement::Passage(passage) => passage.write_tree_string(builder, level),
         }
     }
 }
@@ -107,7 +111,7 @@ impl ToTreeString for EnvironmentElement {
 impl ToTreeString for PassageElement {
     fn write_tree_string(&self, builder: &mut TreeStringBuilder, level: usize) {
         builder.add_node(level, "Passage");
-        for c in &self.0 {
+        for c in &self.contents {
             match c {
                 PassageContent::Text(PassageContentText(text)) => {
                     builder.add_node(level + 1, format!("Text({:?})", text))

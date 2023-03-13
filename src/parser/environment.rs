@@ -9,7 +9,7 @@ use nom::{
 
 use crate::{
     litedown_element::{
-        Element, EnvironmentElement, LitedownAst, PassageContent, PassageContentText,
+        EnvironmentElement, LitedownAst, LitedownElement, PassageContent, PassageContentText,
         PassageElement,
     },
     parser::{environment_header::parse_environment_header, passage_line::parse_passage_line},
@@ -23,7 +23,7 @@ pub(crate) fn parse_environment(
     move |str: &str| {
         let (str, header) = parse_environment_header(indent)(str)?;
 
-        let mut children = Vec::<Element>::new();
+        let mut children = Vec::<LitedownElement>::new();
 
         // pass spaces
         let (str, _) = space0(str)?;
@@ -51,15 +51,19 @@ pub(crate) fn parse_environment(
                     match parse_environment(children_indent)(str) {
                         Ok(tmp) => {
                             if !buffer.is_empty() {
-                                children.push(Element::Passage(PassageElement(buffer)));
+                                children.push(LitedownElement::Passage(PassageElement {
+                                    contents: buffer,
+                                }));
                                 buffer = Vec::new();
                             }
                             str = tmp.0;
-                            children.push(Element::Environment(tmp.1));
+                            children.push(LitedownElement::Environment(tmp.1));
                         }
                         Err(_) => {
                             if tmp.1 > 0 && !buffer.is_empty() {
-                                children.push(Element::Passage(PassageElement(buffer)));
+                                children.push(LitedownElement::Passage(PassageElement {
+                                    contents: buffer,
+                                }));
                                 buffer = Vec::new();
                             }
 
@@ -94,7 +98,9 @@ pub(crate) fn parse_environment(
                     }
                 }
                 if !buffer.is_empty() {
-                    children.push(Element::Passage(PassageElement(buffer)));
+                    children.push(LitedownElement::Passage(PassageElement {
+                        contents: buffer,
+                    }));
                 }
                 str
             }
@@ -108,7 +114,7 @@ pub(crate) fn parse_environment(
                 let (str, line) = any_to_line_ending(str)?;
                 let (_, line) = parse_passage_line(&line)?;
 
-                children.push(Element::Passage(PassageElement(line)));
+                children.push(LitedownElement::Passage(PassageElement { contents: line }));
                 str
             }
         };
@@ -158,7 +164,7 @@ mod tests {
     use crate::{
         command_params,
         litedown_element::{
-            CommandParameterValue::*, Element, EnvironmentElement, PassageContent,
+            CommandParameterValue::*, EnvironmentElement, LitedownElement, PassageContent,
             PassageContentFunction, PassageContentText, PassageElement,
         },
         parser::{environment::parse_environment, passage_line::parse_passage_line},
@@ -174,11 +180,11 @@ mod tests {
 
     impl PartialEq for PassageElement {
         fn eq(&self, other: &Self) -> bool {
-            self.0 == other.0
+            self.contents == other.contents
         }
     }
 
-    impl PartialEq for Element {
+    impl PartialEq for LitedownElement {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
                 (Self::Environment(l0), Self::Environment(r0)) => l0 == r0,
@@ -224,11 +230,13 @@ mod tests {
                         "string" => String("あいうえお".to_string()),
                         "number" => Number(None, 1.1)
                     },
-                    children: vec![Element::Passage(PassageElement(vec![
-                        PassageContent::Text(PassageContentText("aaa".to_string())),
-                        PassageContent::Text(PassageContentText("\n".to_string())),
-                        PassageContent::Text(PassageContentText("bbb".to_string()))
-                    ]))]
+                    children: vec![LitedownElement::Passage(PassageElement {
+                        contents: vec![
+                            PassageContent::Text(PassageContentText("aaa".to_string())),
+                            PassageContent::Text(PassageContentText("\n".to_string())),
+                            PassageContent::Text(PassageContentText("bbb".to_string()))
+                        ]
+                    })]
                 }
             ))
         );
@@ -249,14 +257,18 @@ mod tests {
                     name: "ev".to_string(),
                     parameters: HashMap::new(),
                     children: vec![
-                        Element::Passage(PassageElement(vec![
-                            PassageContent::Text(PassageContentText("line 1".to_string())),
-                            PassageContent::Text(PassageContentText("\n".to_string())),
-                            PassageContent::Text(PassageContentText("line 2".to_string()))
-                        ])),
-                        Element::Passage(PassageElement(vec![PassageContent::Text(
-                            PassageContentText("line 3".to_string())
-                        )]))
+                        LitedownElement::Passage(PassageElement {
+                            contents: vec![
+                                PassageContent::Text(PassageContentText("line 1".to_string())),
+                                PassageContent::Text(PassageContentText("\n".to_string())),
+                                PassageContent::Text(PassageContentText("line 2".to_string()))
+                            ]
+                        }),
+                        LitedownElement::Passage(PassageElement {
+                            contents: vec![PassageContent::Text(PassageContentText(
+                                "line 3".to_string()
+                            ))]
+                        })
                     ]
                 }
             ))
@@ -287,31 +299,41 @@ mod tests {
                     name: "env1".to_string(),
                     parameters: HashMap::new(),
                     children: vec![
-                        Element::Passage(PassageElement(vec![
-                            PassageContent::Text(PassageContentText("aaa".to_string())),
-                            PassageContent::Text(PassageContentText("\n".to_string())),
-                            PassageContent::Text(PassageContentText("bbb".to_string()))
-                        ])),
-                        Element::Passage(PassageElement(vec![PassageContent::Text(
-                            PassageContentText("ccc".to_string())
-                        )])),
-                        Element::Environment(EnvironmentElement {
+                        LitedownElement::Passage(PassageElement {
+                            contents: vec![
+                                PassageContent::Text(PassageContentText("aaa".to_string())),
+                                PassageContent::Text(PassageContentText("\n".to_string())),
+                                PassageContent::Text(PassageContentText("bbb".to_string()))
+                            ]
+                        }),
+                        LitedownElement::Passage(PassageElement {
+                            contents: vec![PassageContent::Text(PassageContentText(
+                                "ccc".to_string()
+                            ))]
+                        }),
+                        LitedownElement::Environment(EnvironmentElement {
                             name: "env2".to_string(),
                             parameters: HashMap::new(),
                             children: vec![
-                                Element::Passage(PassageElement(vec![PassageContent::Text(
-                                    PassageContentText("xxx".to_string())
-                                )])),
-                                Element::Passage(PassageElement(vec![
-                                    PassageContent::Text(PassageContentText("yyy".to_string())),
-                                    PassageContent::Text(PassageContentText("\n".to_string())),
-                                    PassageContent::Text(PassageContentText("zzz".to_string()))
-                                ])),
+                                LitedownElement::Passage(PassageElement {
+                                    contents: vec![PassageContent::Text(PassageContentText(
+                                        "xxx".to_string()
+                                    ))]
+                                }),
+                                LitedownElement::Passage(PassageElement {
+                                    contents: vec![
+                                        PassageContent::Text(PassageContentText("yyy".to_string())),
+                                        PassageContent::Text(PassageContentText("\n".to_string())),
+                                        PassageContent::Text(PassageContentText("zzz".to_string()))
+                                    ]
+                                }),
                             ]
                         }),
-                        Element::Passage(PassageElement(vec![PassageContent::Text(
-                            PassageContentText("ddd".to_string())
-                        )]))
+                        LitedownElement::Passage(PassageElement {
+                            contents: vec![PassageContent::Text(PassageContentText(
+                                "ddd".to_string()
+                            ))]
+                        })
                     ]
                 }
             ))

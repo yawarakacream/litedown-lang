@@ -4,7 +4,7 @@ use crate::{
     eval_with_litedown,
     evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
     litedown_element::{
-        stringify_number_parameter, CommandParameterValue, Element, EnvironmentElement,
+        stringify_number_parameter, CommandParameterValue, EnvironmentElement, LitedownElement,
     },
     utility::html::HtmlElement,
 };
@@ -101,12 +101,13 @@ impl EnvironmentEvaluator for MiniPages {
 
         for child in &element.children {
             match child {
-                Element::Environment(child_environment) => match child_environment.name.as_str() {
-                    "page" => {
-                        let mut page = HtmlElement::new("div");
-                        page.set_attr("class", "page");
+                LitedownElement::Environment(child_environment) => {
+                    match child_environment.name.as_str() {
+                        "page" => {
+                            let mut page = HtmlElement::new("div");
+                            page.set_attr("class", "page");
 
-                        let width = match child_environment.parameters.get("width") {
+                            let width = match child_environment.parameters.get("width") {
                             Some(p) => {
                                 match columns {
                                     Some(_) => bail!("Cannot specify 'width' on @page@ with 'columns' on @minipages@"),
@@ -127,13 +128,14 @@ impl EnvironmentEvaluator for MiniPages {
                                 }
                             }
                         };
-                        page.set_attr("style", &format!("width: {width};"));
+                            page.set_attr("style", &format!("width: {width};"));
 
-                        eval_with_litedown!(child_environment to page with lde);
-                        minipages.append(page);
+                            eval_with_litedown!(child_environment to page with lde);
+                            minipages.append(page);
+                        }
+                        _ => bail!("Unknown environment: {}", child_environment.name),
                     }
-                    _ => bail!("Unknown environment: {}", child_environment.name),
-                },
+                }
                 _ => bail!("Only environment @page@ is allowed"),
             }
         }
