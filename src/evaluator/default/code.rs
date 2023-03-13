@@ -6,9 +6,12 @@ use crate::{
     evaluator::{
         environment::EnvironmentEvaluator, function::FunctionEvaluator, litedown::LitedownEvaluator,
     },
-    litedown_element::{
-        CommandParameterValue, EnvironmentElement, LitedownElement, PassageContent,
-        PassageContentFunction, PassageElement,
+    tree::{
+        element::{
+            EnvironmentElement, LitedownElement, PassageContent, PassageContentFunction,
+            PassageElement,
+        },
+        parameter::CommandParameterValue,
     },
     utility::html::HtmlElement,
 };

@@ -5,7 +5,7 @@ use anyhow::{bail, Result};
 use crate::{
     eval_with_litedown,
     evaluator::{environment::EnvironmentEvaluator, litedown::LitedownEvaluator},
-    litedown_element::{CommandParameterValue, EnvironmentElement},
+    tree::{element::EnvironmentElement, parameter::CommandParameterValue},
     utility::html::HtmlElement,
 };
 

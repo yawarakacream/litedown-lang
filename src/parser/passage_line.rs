@@ -7,8 +7,8 @@ use nom::{
 };
 
 use crate::{
-    litedown_element::{PassageContent, PassageContentFunction, PassageContentText},
     parser::command_parameter::parse_command_parameter,
+    tree::element::{PassageContent, PassageContentFunction, PassageContentText},
     utility::nom::{namestr, IResultV},
     verror,
 };
@@ -151,10 +151,9 @@ mod tests {
 
     use crate::{
         command_params,
-        litedown_element::{
-            CommandParameterValue::*, PassageContent, PassageContentFunction, PassageContentText,
-        },
         parser::passage_line::parse_passage_line,
+        tree::element::{PassageContent, PassageContentFunction, PassageContentText},
+        tree::parameter::CommandParameterValue::*,
     };
 
     impl PartialEq for PassageContent {

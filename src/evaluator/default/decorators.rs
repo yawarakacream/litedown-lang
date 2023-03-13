@@ -2,7 +2,7 @@ use anyhow::{bail, Result};
 
 use crate::{
     evaluator::{function::FunctionEvaluator, litedown::LitedownEvaluator},
-    litedown_element::{CommandParameterValue, PassageContentFunction},
+    tree::{element::PassageContentFunction, parameter::CommandParameterValue},
     utility::html::HtmlElement,
 };
 

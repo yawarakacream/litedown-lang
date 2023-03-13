@@ -1,12 +1,8 @@
-use std::{collections::HashMap, fmt, path::PathBuf};
+use std::collections::HashMap;
 
 use crate::utility::tree_string_builder::{ToTreeString, TreeStringBuilder};
 
-#[derive(Debug)]
-pub struct LitedownAst {
-    pub source_path: Option<PathBuf>,
-    pub roots: Vec<EnvironmentElement>,
-}
+use super::parameter::CommandParameterValue;
 
 #[derive(Debug)]
 pub enum LitedownElement {
@@ -43,43 +39,9 @@ pub struct PassageContentFunction {
 }
 
 #[derive(Debug)]
-pub enum CommandParameterValue {
-    String(String),
-    Number(Option<String>, f64),
-}
-
-impl fmt::Display for CommandParameterValue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            CommandParameterValue::String(s) => write!(f, "{}", s),
-            CommandParameterValue::Number(u, n) => match u {
-                Some(u) => write!(f, "{}{}", n, u),
-                None => write!(f, "{}", n),
-            },
-        }
-    }
-}
-
-pub fn stringify_number_parameter(unit: &Option<String>, number: &f64) -> String {
-    match unit {
-        Some(unit) => format!("{number}{unit}"),
-        None => number.to_string(),
-    }
-}
-
-#[derive(Debug)]
 pub struct EnvironmentHeader {
     pub name: String,
     pub parameters: HashMap<String, CommandParameterValue>,
-}
-
-impl ToTreeString for LitedownAst {
-    fn write_tree_string(&self, builder: &mut TreeStringBuilder, level: usize) {
-        builder.add_node(level, "LitedownAst");
-        for root in &self.roots {
-            root.write_tree_string(builder, level + 1);
-        }
-    }
 }
 
 impl ToTreeString for LitedownElement {

@@ -6,8 +6,8 @@ use nom::{
 };
 
 use crate::{
-    litedown_element::EnvironmentHeader,
     parser::command_parameter::parse_command_parameter,
+    tree::element::EnvironmentHeader,
     utility::nom::{count_indent, namestr, pass_blank_lines0, IResultV},
     verror,
 };
@@ -100,9 +100,8 @@ pub fn parse_environment_header(
 #[cfg(test)]
 mod tests {
     use crate::{
-        command_params,
-        litedown_element::{CommandParameterValue::*, EnvironmentHeader},
-        parser::environment_header::parse_environment_header,
+        command_params, parser::environment_header::parse_environment_header,
+        tree::element::EnvironmentHeader, tree::parameter::CommandParameterValue::*,
     };
 
     impl PartialEq for EnvironmentHeader {

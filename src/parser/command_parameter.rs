@@ -5,7 +5,7 @@ use nom::{
 };
 
 use crate::{
-    litedown_element::CommandParameterValue,
+    tree::parameter::CommandParameterValue,
     utility::nom::{namestr, parse_f64, ws, IResultV},
 };
 
@@ -76,8 +76,8 @@ pub fn parse_command_parameter(str: &str) -> IResultV<&str, (String, CommandPara
 #[cfg(test)]
 mod tests {
     use crate::{
-        litedown_element::CommandParameterValue::{self, *},
         parser::command_parameter::parse_command_parameter,
+        tree::parameter::CommandParameterValue::{self, *},
     };
 
     #[macro_export]

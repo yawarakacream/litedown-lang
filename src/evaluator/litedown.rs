@@ -3,7 +3,10 @@ use std::{collections::HashMap, path::PathBuf};
 use anyhow::{bail, Result};
 
 use crate::{
-    litedown_element::{EnvironmentElement, LitedownAst, PassageContentFunction},
+    tree::{
+        ast::LitedownAst,
+        element::{EnvironmentElement, PassageContentFunction},
+    },
     utility::html::{Html, HtmlElement, HtmlString},
 };
 

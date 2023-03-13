@@ -8,11 +8,13 @@ use nom::{
 };
 
 use crate::{
-    litedown_element::{
-        EnvironmentElement, LitedownAst, LitedownElement, PassageContent, PassageContentText,
-        PassageElement,
-    },
     parser::{environment_header::parse_environment_header, passage_line::parse_passage_line},
+    tree::{
+        ast::LitedownAst,
+        element::{
+            EnvironmentElement, LitedownElement, PassageContent, PassageContentText, PassageElement,
+        },
+    },
     utility::nom::{any_to_line_ending, count_indent, pass_blank_lines0, IResultV},
     verror,
 };
@@ -163,11 +165,12 @@ mod tests {
 
     use crate::{
         command_params,
-        litedown_element::{
-            CommandParameterValue::*, EnvironmentElement, LitedownElement, PassageContent,
-            PassageContentFunction, PassageContentText, PassageElement,
-        },
         parser::{environment::parse_environment, passage_line::parse_passage_line},
+        tree::element::{
+            EnvironmentElement, LitedownElement, PassageContent, PassageContentFunction,
+            PassageContentText, PassageElement,
+        },
+        tree::parameter::CommandParameterValue::*,
     };
 
     impl PartialEq for EnvironmentElement {

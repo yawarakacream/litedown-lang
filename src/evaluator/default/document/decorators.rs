@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::{
     evaluator::{function::FunctionEvaluator, litedown::LitedownEvaluator},
-    litedown_element::PassageContentFunction,
+    tree::element::PassageContentFunction,
     utility::html::HtmlElement,
 };
 

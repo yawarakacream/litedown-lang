@@ -6,7 +6,10 @@ use crate::{
     eval_with_litedown,
     evaluator::environment::EnvironmentEvaluator,
     evaluator::{default::document::title::Title, litedown::LitedownEvaluator},
-    litedown_element::{stringify_number_parameter, CommandParameterValue, EnvironmentElement},
+    tree::{
+        element::EnvironmentElement,
+        parameter::{stringify_number_parameter, CommandParameterValue},
+    },
     utility::html::HtmlElement,
 };
 

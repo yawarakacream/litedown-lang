@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::{litedown_element::PassageContentFunction, utility::html::HtmlElement};
+use crate::{tree::element::PassageContentFunction, utility::html::HtmlElement};
 
 use super::litedown::LitedownEvaluator;
 
