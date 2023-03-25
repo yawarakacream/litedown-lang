@@ -1,5 +1,5 @@
 use nom::{
-    branch::alt,
+    branch::{alt, permutation},
     bytes::complete::{is_not, take_while1},
     character::complete::{alpha1, char, digit1, line_ending, space0},
     combinator::{eof, map, opt, recognize},
@@ -86,7 +86,16 @@ pub fn pass_blank_lines0(str: &str) -> IResultV<&str, usize> {
             Err(_) => break,
         }
     }
-    return Ok((str, i));
+    if let Ok(tmp) = permutation((
+        space0::<&str, VerboseError<&str>>,
+        eof::<&str, VerboseError<&str>>,
+    ))(str)
+    {
+        str = tmp.0;
+        i += 1;
+    }
+    println!("aaa {:?} {:?}", str, i);
+    Ok((str, i))
 }
 
 pub fn any_to_line_ending(str: &str) -> IResultV<&str, &str> {

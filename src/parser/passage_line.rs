@@ -1,128 +1,77 @@
 use nom::{
-    character::complete::{anychar, char, line_ending, space0},
+    character::complete::{anychar, char, line_ending},
     combinator::eof,
     error::VerboseError,
 };
 
 use crate::{
-    parser::command_parameter::parse_command_parameter,
     tree::{
         element::{PassageContent, PassageContentFunction, PassageContentText},
-        parameter::{CommandParameter, CommandParameterContainer},
+        parameter::CommandParameterContainer,
     },
-    utility::nom::{namestr, IResultV},
+    utility::nom::{count_indent, namestr, IResultV},
     verror,
 };
 
-pub fn parse_passage_line(str: &str) -> IResultV<&str, Vec<PassageContent>> {
-    let mut ret = Vec::new();
+use super::command_parameter::parse_command_parameter_container;
 
-    let mut text_buffer = String::new();
-    let mut str = str;
-    loop {
-        if let Ok((str, _)) = eof::<&str, VerboseError<&str>>(str) {
-            if !text_buffer.is_empty() {
-                ret.push(PassageContent::Text(PassageContentText(text_buffer)));
-            }
-
-            return Ok((str, ret));
+pub fn parse_passage_line(
+    indent: usize,
+) -> impl FnMut(&str) -> IResultV<&str, Vec<PassageContent>> {
+    move |str: &str| {
+        let (mut str, here_indent) = count_indent(str)?;
+        if here_indent != indent {
+            return Err(verror!("parse_passage_line", str, "invalid indent"));
         }
 
-        if let Ok(tmp) = line_ending::<&str, VerboseError<&str>>(str) {
-            return Err(verror!(
-                "parse_passage_line",
-                tmp.0,
-                "cannot contain line_ending"
-            ));
-        }
-        let tmp = anychar(str)?;
-        str = tmp.0;
-        let c = tmp.1;
+        let mut ret = Vec::new();
 
-        if c == '@' {
-            if !text_buffer.is_empty() {
-                ret.push(PassageContent::Text(PassageContentText(text_buffer)));
-                text_buffer = String::new();
+        let mut text_buffer = String::new();
+        loop {
+            if let Ok(tmp) = eof::<&str, VerboseError<&str>>(str) {
+                str = tmp.0;
+                break;
             }
 
-            let tmp = namestr(str)?;
+            if let Ok(tmp) = line_ending::<&str, VerboseError<&str>>(str) {
+                str = tmp.0;
+                break;
+            }
+            let tmp = anychar(str)?;
             str = tmp.0;
-            let name = tmp.1;
+            let c = tmp.1;
 
-            let parameters = match char::<&str, VerboseError<&str>>('[')(str) {
-                Ok(tmp) => {
-                    str = tmp.0;
-                    let mut parameters = CommandParameterContainer::new();
-
-                    loop {
-                        str = space0(str)?.0;
-
-                        let tmp = parse_command_parameter(str)?;
-                        let CommandParameter { key, value } = tmp.1;
-                        if parameters.contains_key(&key) {
-                            return Err(verror!("parse_passage_line", str, "duplicate parameter"));
-                        }
-                        str = tmp.0;
-                        parameters.insert(&key, value);
-
-                        str = space0(str)?.0;
-
-                        if let Ok(tmp) = char::<&str, VerboseError<&str>>(',')(str) {
-                            str = tmp.0;
-                            str = space0(str)?.0;
-
-                            // support trailing comma
-                            if let Ok(tmp) = char::<&str, VerboseError<&str>>(']')(str) {
-                                str = tmp.0;
-                                break;
-                            }
-                        } else {
-                            str = space0(tmp.0)?.0;
-                            str = char(']')(str)?.0;
-                            break;
-                        }
-                    }
-
-                    parameters
+            if c == '@' {
+                if !text_buffer.is_empty() {
+                    ret.push(PassageContent::Text(PassageContentText(text_buffer)));
+                    text_buffer = String::new();
                 }
-                Err(_) => CommandParameterContainer::new(),
-            };
 
-            let body = match char::<&str, VerboseError<&str>>('{')(str) {
-                Ok(tmp) => {
-                    str = tmp.0;
-                    let mut body = String::new();
-                    let mut escaped = false;
+                let tmp = namestr(str)?;
+                str = tmp.0;
+                let name = tmp.1;
 
-                    loop {
-                        let tmp = anychar(str)?;
-                        str = tmp.0;
-                        let c = tmp.1;
+                let tmp = parse_command_parameter_container(indent)(str)
+                    .unwrap_or((str, CommandParameterContainer::new()));
+                str = tmp.0;
+                let parameters = tmp.1;
 
-                        if escaped {
-                            body.push(c);
-                        } else if c == '\\' {
-                            escaped = true;
-                        } else if c == '}' {
-                            break;
-                        } else {
-                            body.push(c);
-                        }
-                    }
-
-                    Some(body)
-                }
-                Err(_) => match char::<&str, VerboseError<&str>>('$')(str) {
+                let body = match char::<&str, VerboseError<&str>>('{')(str) {
                     Ok(tmp) => {
                         str = tmp.0;
                         let mut body = String::new();
+                        let mut escaped = false;
 
                         loop {
                             let tmp = anychar(str)?;
                             str = tmp.0;
                             let c = tmp.1;
 
-                            if c == '$' {
+                            if escaped {
+                                body.push(c);
+                            } else if c == '\\' {
+                                escaped = true;
+                            } else if c == '}' {
                                 break;
                             } else {
                                 body.push(c);
@@ -131,18 +80,43 @@ pub fn parse_passage_line(str: &str) -> IResultV<&str, Vec<PassageContent>> {
 
                         Some(body)
                     }
-                    Err(_) => None,
-                },
-            };
+                    Err(_) => match char::<&str, VerboseError<&str>>('$')(str) {
+                        Ok(tmp) => {
+                            str = tmp.0;
+                            let mut body = String::new();
 
-            ret.push(PassageContent::Function(PassageContentFunction {
-                name,
-                parameters,
-                body,
-            }));
-        } else {
-            text_buffer.push(c);
+                            loop {
+                                let tmp = anychar(str)?;
+                                str = tmp.0;
+                                let c = tmp.1;
+
+                                if c == '$' {
+                                    break;
+                                } else {
+                                    body.push(c);
+                                }
+                            }
+
+                            Some(body)
+                        }
+                        Err(_) => None,
+                    },
+                };
+
+                ret.push(PassageContent::Function(PassageContentFunction {
+                    name,
+                    parameters,
+                    body,
+                }));
+            } else {
+                text_buffer.push(c);
+            }
         }
+
+        if !text_buffer.is_empty() {
+            ret.push(PassageContent::Text(PassageContentText(text_buffer)));
+        }
+        Ok((str, ret))
     }
 }
 
@@ -182,7 +156,7 @@ mod tests {
     #[test]
     fn test() {
         assert_eq!(
-            parse_passage_line("@aaa"),
+            parse_passage_line(0)("@aaa"),
             Ok((
                 "",
                 vec![PassageContent::Function(PassageContentFunction {
@@ -194,7 +168,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_passage_line("@aaa[p = 1]"),
+            parse_passage_line(0)("@aaa[p = 1]"),
             Ok((
                 "",
                 vec![PassageContent::Function(PassageContentFunction {
@@ -208,7 +182,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_passage_line("@aaa{bbb}"),
+            parse_passage_line(0)("@aaa{bbb}"),
             Ok((
                 "",
                 vec![PassageContent::Function(PassageContentFunction {
@@ -220,7 +194,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_passage_line("@aaa[p = 1]{bbb}"),
+            parse_passage_line(0)("@aaa[p = 1]{bbb}"),
             Ok((
                 "",
                 vec![PassageContent::Function(PassageContentFunction {
@@ -234,7 +208,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_passage_line("left @func right"),
+            parse_passage_line(0)("left @func right"),
             Ok((
                 "",
                 vec![
@@ -250,7 +224,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_passage_line("おはようございます @konnnitiha[16px]{}こんばんは"),
+            parse_passage_line(0)("おはようございます @konnnitiha[16px]{}こんばんは"),
             Ok((
                 "",
                 vec![
@@ -267,6 +241,27 @@ mod tests {
             ))
         );
 
-        // assert_eq!(parse_passage_line("str"))
+        assert_eq!(
+            parse_passage_line(0)(
+                "\
+abc @func[
+    p = 'q'
+] def"
+            ),
+            Ok((
+                "",
+                vec![
+                    PassageContent::Text(PassageContentText("abc ".to_string())),
+                    PassageContent::Function(PassageContentFunction {
+                        name: "func".to_string(),
+                        parameters: command_params! {
+                            "p" => String("q".to_string())
+                        },
+                        body: None,
+                    }),
+                    PassageContent::Text(PassageContentText(" def".to_string()))
+                ]
+            ))
+        );
     }
 }

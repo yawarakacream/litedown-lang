@@ -71,33 +71,31 @@ pub(crate) fn parse_environment(
                                 buffer = Vec::new();
                             }
 
-                            let tmp = count_indent(str)?;
-                            let here_indent = tmp.1;
+                            let (_, here_indent) = count_indent(str)?;
                             if here_indent < children_indent {
                                 break; // pass to parent environment
                             }
-                            str = tmp.0;
-
                             if children_indent < here_indent {
                                 return Err(verror!("parse_environment", str, "invalid indent"));
                             }
 
-                            if let Ok(tmp) = eof::<&str, VerboseError<&str>>(str) {
-                                str = tmp.0;
-                                break;
-                            }
-
-                            let tmp = any_to_line_ending(str)?;
+                            println!("{:?}", str);
+                            let tmp = parse_passage_line(here_indent)(str)?;
                             str = tmp.0;
-                            let line = tmp.1;
+                            let mut line = tmp.1;
+
                             assert!(line.len() > 0);
-                            let (_, mut line) = parse_passage_line(&line)?;
                             if 0 < buffer.len() {
                                 buffer.push(PassageContent::Text(PassageContentText(
                                     "\n".to_string(),
                                 )));
                             }
                             buffer.append(&mut line);
+
+                            if let Ok(tmp) = eof::<&str, VerboseError<&str>>(str) {
+                                str = tmp.0;
+                                break;
+                            }
                         }
                     }
                 }
@@ -116,7 +114,7 @@ pub(crate) fn parse_environment(
                 }
 
                 let (str, line) = any_to_line_ending(str)?;
-                let (_, line) = parse_passage_line(&line)?;
+                let (_, line) = parse_passage_line(0)(&line)?;
 
                 children.push(LitedownElement::Passage(PassageElement { contents: line }));
                 str
@@ -197,7 +195,7 @@ mod tests {
     #[test]
     fn test() {
         assert_eq!(
-            parse_passage_line("left @func{body} right"),
+            parse_passage_line(0)("left @func{body} right"),
             Ok((
                 "",
                 vec![
@@ -371,7 +369,7 @@ mod tests {
             ),
             Err(nom::Err::Error(VerboseError {
                 errors: vec![(
-                    "bbb",
+                    "                 bbb",
                     VerboseErrorKind::Context("parse_environment (invalid indent)")
                 )]
             }))

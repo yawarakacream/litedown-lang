@@ -1,15 +1,32 @@
 use nom::{
     branch::alt,
-    bytes::complete::tag,
-    character::complete::{alpha1, anychar, char},
+    bytes::complete::{tag, take_until1},
+    character::complete::{alpha1, anychar, char, space0},
+    error::VerboseError,
 };
 
 use crate::{
-    tree::parameter::{CommandParameter, CommandParameterValue},
+    tree::parameter::{CommandParameter, CommandParameterContainer, CommandParameterValue},
     utility::nom::{namestr, parse_f64, ws, IResultV},
+    verror,
 };
 
+use super::environment_header::pass_indent;
+
 impl CommandParameterValue {
+    fn parse_number(str: &str) -> IResultV<&str, CommandParameterValue> {
+        let (str, value) = parse_f64(str)?;
+        match Self::parse_number_unit(str) {
+            Ok((str, unit)) => Ok((str, CommandParameterValue::Number(Some(unit), value))),
+            Err(_) => Ok((str, CommandParameterValue::Number(None, value))),
+        }
+    }
+
+    fn parse_number_unit(str: &str) -> IResultV<&str, String> {
+        let (str, value) = alt((alpha1, tag("%")))(str)?;
+        Ok((str, value.to_string()))
+    }
+
     fn parse_string(str: &str) -> IResultV<&str, CommandParameterValue> {
         let (str, delimiter) = alt((char('"'), char('\''), char('`')))(str)?;
 
@@ -40,28 +57,15 @@ impl CommandParameterValue {
         Ok((str, CommandParameterValue::String(value)))
     }
 
-    fn parse_number(str: &str) -> IResultV<&str, CommandParameterValue> {
-        let (str, value) = parse_f64(str)?;
-        match Self::parse_number_unit(str) {
-            Ok((str, unit)) => Ok((str, CommandParameterValue::Number(Some(unit), value))),
-            Err(_) => Ok((str, CommandParameterValue::Number(None, value))),
-        }
-    }
-
-    fn parse_number_unit(str: &str) -> IResultV<&str, String> {
-        let (str, value) = alt((alpha1, tag("%")))(str)?;
-        Ok((str, value.to_string()))
-    }
-
     fn parse_some(str: &str) -> IResultV<&str, CommandParameterValue> {
         alt((
-            CommandParameterValue::parse_string,
             CommandParameterValue::parse_number,
+            CommandParameterValue::parse_string,
         ))(str)
     }
 }
 
-pub fn parse_command_parameter(str: &str) -> IResultV<&str, CommandParameter> {
+fn parse_command_parameter(str: &str) -> IResultV<&str, CommandParameter> {
     match CommandParameterValue::parse_some(str) {
         Ok((str, value)) => Ok((
             str,
@@ -79,10 +83,76 @@ pub fn parse_command_parameter(str: &str) -> IResultV<&str, CommandParameter> {
     }
 }
 
+pub fn parse_command_parameter_container(
+    indent: usize,
+) -> impl FnMut(&str) -> IResultV<&str, CommandParameterContainer> {
+    move |str: &str| {
+        fn normal(indent: usize) -> impl FnMut(&str) -> IResultV<&str, CommandParameterContainer> {
+            move |str: &str| {
+                let (mut str, _) = char('[')(str)?;
+                let mut parameters = CommandParameterContainer::new();
+
+                loop {
+                    str = pass_indent(indent, str)?.0;
+
+                    let tmp = parse_command_parameter(str)?;
+                    let CommandParameter { key, value } = tmp.1;
+                    if parameters.contains_key(&key) {
+                        return Err(verror!(
+                            "parse_command_parameter_container",
+                            str,
+                            "duplicate parameter"
+                        ));
+                    }
+                    str = tmp.0;
+                    parameters.insert(&key, value);
+
+                    str = space0(str)?.0;
+
+                    if let Ok(tmp) = char::<&str, VerboseError<&str>>(',')(str) {
+                        str = tmp.0;
+                        str = pass_indent(indent, str)?.0;
+
+                        // support trailing comma
+                        if let Ok(tmp) = char::<&str, VerboseError<&str>>(']')(str) {
+                            str = tmp.0;
+                            break;
+                        }
+                    } else {
+                        str = pass_indent(indent, str)?.0;
+                        str = char(']')(str)?.0;
+                        break;
+                    }
+                }
+
+                Ok((str, parameters))
+            }
+        }
+
+        fn anonymous_string(str: &str) -> IResultV<&str, CommandParameterContainer> {
+            let (str, _) = char('[')(str)?;
+            let (str, value) = take_until1("]")(str)?;
+            let (str, _) = char(']')(str)?;
+            if value.contains('\n') {
+                return Err(verror!(
+                    "parse_command_parameter_container anonymous_string",
+                    str,
+                    "Cannot contain line break"
+                ));
+            }
+            let mut parameters = CommandParameterContainer::new();
+            parameters.insert("", CommandParameterValue::String(value.to_string()));
+            Ok((str, parameters))
+        }
+
+        alt((normal(indent), anonymous_string))(str)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        parser::command_parameter::parse_command_parameter,
+        parser::command_parameter::{parse_command_parameter, parse_command_parameter_container},
         tree::parameter::{CommandParameter, CommandParameterValue::*},
     };
 
@@ -122,7 +192,7 @@ mod tests {
         );
 
         assert_eq!(
-            parse_command_parameter("hw = 'Hello, world!'"),
+            parse_command_parameter("hw = \"Hello, world!\""),
             Ok((
                 "",
                 CommandParameter {
@@ -139,6 +209,16 @@ mod tests {
                 CommandParameter {
                     key: "konnnitiha".to_string(),
                     value: String("こんにちは。\\ \"Hello\" \\".to_string())
+                }
+            ))
+        );
+
+        assert_eq!(
+            parse_command_parameter_container(0)(r#"[strstr]"#),
+            Ok((
+                "",
+                command_params! {
+                    "" => String("strstr".to_string())
                 }
             ))
         );
