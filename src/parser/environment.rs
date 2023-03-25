@@ -79,7 +79,6 @@ pub(crate) fn parse_environment(
                                 return Err(verror!("parse_environment", str, "invalid indent"));
                             }
 
-                            println!("{:?}", str);
                             let tmp = parse_passage_line(here_indent)(str)?;
                             str = tmp.0;
                             let mut line = tmp.1;
