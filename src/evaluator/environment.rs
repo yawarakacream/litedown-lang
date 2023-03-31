@@ -44,7 +44,7 @@ macro_rules! eval_with_litedown {
                     for content in contents {
                         match content {
                             $crate::tree::element::PassageContent::Text(content) => {
-                                passage.append_text(&content.0);
+                                passage.append_text(&content.value);
                             }
                             $crate::tree::element::PassageContent::Function(content) => {
                                 match content.name.as_str() {

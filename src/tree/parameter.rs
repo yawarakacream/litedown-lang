@@ -2,24 +2,22 @@ use std::{collections::HashMap, fmt};
 
 use anyhow::{bail, Result};
 
-use serde::{
-    ser::{SerializeMap, SerializeStruct},
-    Serialize, Serializer,
-};
+use serde::{ser::SerializeMap, Serialize as SerdeSerialize, Serializer as SerdeSerializer};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, SerdeSerialize)]
+#[serde(tag = "__struct")]
 pub enum CommandParameterValue {
-    String(String),
-    Number(Option<String>, f64),
+    String { value: String },
+    Number { number: f64, unit: Option<String> },
 }
 
 impl fmt::Display for CommandParameterValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            CommandParameterValue::String(s) => write!(f, "{}", s),
-            CommandParameterValue::Number(u, n) => match u {
-                Some(u) => write!(f, "{}{}", n, u),
-                None => write!(f, "{}", n),
+            CommandParameterValue::String { value } => write!(f, "{}", value),
+            CommandParameterValue::Number { number, unit } => match unit {
+                Some(unit) => write!(f, "{}{}", number, unit),
+                None => write!(f, "{}", number),
             },
         }
     }
@@ -41,21 +39,21 @@ pub struct CommandParameter {
 impl CommandParameter {
     pub fn try_into_str(&self) -> Result<&str> {
         match &self.value {
-            CommandParameterValue::String(string) => Ok(&string.as_str()),
+            CommandParameterValue::String { value } => Ok(&value.as_str()),
             _ => bail!("Invalid parameter '{}': {}", self.key, self.value),
         }
     }
 
     pub fn try_into_string(&self) -> Result<&String> {
         match &self.value {
-            CommandParameterValue::String(string) => Ok(&string),
+            CommandParameterValue::String { value } => Ok(&value),
             _ => bail!("Invalid parameter '{}': {}", self.key, self.value),
         }
     }
 
     pub fn try_into_number(&self) -> Result<(&Option<String>, f64)> {
         match &self.value {
-            CommandParameterValue::Number(unit, number) => Ok((unit, *number)),
+            CommandParameterValue::Number { unit, number } => Ok((unit, *number)),
             _ => bail!("Invalid parameter '{}': {}", self.key, self.value),
         }
     }
@@ -111,33 +109,10 @@ impl CommandParameterContainer {
     }
 }
 
-impl Serialize for CommandParameterValue {
+impl SerdeSerialize for CommandParameterContainer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
-    {
-        match self {
-            CommandParameterValue::String(value) => {
-                let mut state = serializer.serialize_struct("CommandParameterValue", 2)?;
-                state.serialize_field("__struct", "String")?;
-                state.serialize_field("value", value)?;
-                state.end()
-            }
-            CommandParameterValue::Number(unit, number) => {
-                let mut state = serializer.serialize_struct("CommandParameterValue", 3)?;
-                state.serialize_field("__struct", "Number")?;
-                state.serialize_field("unit", unit)?;
-                state.serialize_field("number", number)?;
-                state.end()
-            }
-        }
-    }
-}
-
-impl Serialize for CommandParameterContainer {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        S: SerdeSerializer,
     {
         let mut state = serializer.serialize_map(Some(self.parameters.len()))?;
         for CommandParameter { key, value } in self.parameters.values() {
@@ -153,8 +128,19 @@ mod tests {
     impl PartialEq for CommandParameterValue {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
-                (Self::String(l0), Self::String(r0)) => l0 == r0,
-                (Self::Number(l0, l1), Self::Number(r0, r1)) => l0 == r0 && (l1 - r1).abs() < 1e-8,
+                (Self::String { value: l_value }, Self::String { value: r_value }) => {
+                    l_value == r_value
+                }
+                (
+                    Self::Number {
+                        number: l_number,
+                        unit: l_unit,
+                    },
+                    Self::Number {
+                        number: r_number,
+                        unit: r_unit,
+                    },
+                ) => l_number == r_number && l_unit == r_unit,
                 _ => false,
             }
         }

@@ -17,8 +17,20 @@ impl CommandParameterValue {
     fn parse_number(str: &str) -> IResultV<&str, CommandParameterValue> {
         let (str, value) = parse_f64(str)?;
         match Self::parse_number_unit(str) {
-            Ok((str, unit)) => Ok((str, CommandParameterValue::Number(Some(unit), value))),
-            Err(_) => Ok((str, CommandParameterValue::Number(None, value))),
+            Ok((str, unit)) => Ok((
+                str,
+                CommandParameterValue::Number {
+                    number: value,
+                    unit: Some(unit),
+                },
+            )),
+            Err(_) => Ok((
+                str,
+                CommandParameterValue::Number {
+                    number: value,
+                    unit: None,
+                },
+            )),
         }
     }
 
@@ -54,7 +66,7 @@ impl CommandParameterValue {
                 }
             }
         }
-        Ok((str, CommandParameterValue::String(value)))
+        Ok((str, CommandParameterValue::String { value }))
     }
 
     fn parse_some(str: &str) -> IResultV<&str, CommandParameterValue> {
@@ -141,7 +153,12 @@ pub fn parse_command_parameter_container(
                 ));
             }
             let mut parameters = CommandParameterContainer::new();
-            parameters.insert("", CommandParameterValue::String(value.to_string()));
+            parameters.insert(
+                "",
+                CommandParameterValue::String {
+                    value: value.to_string(),
+                },
+            );
             Ok((str, parameters))
         }
 
@@ -175,7 +192,10 @@ mod tests {
                 "",
                 CommandParameter {
                     key: "number".to_string(),
-                    value: Number(None, 1.0)
+                    value: Number {
+                        number: 1.0,
+                        unit: None
+                    }
                 }
             ))
         );
@@ -186,7 +206,10 @@ mod tests {
                 "",
                 CommandParameter {
                     key: "pixel".to_string(),
-                    value: Number(Some("px".to_string()), -1.2)
+                    value: Number {
+                        number: -1.2,
+                        unit: Some("px".to_string())
+                    }
                 }
             ))
         );
@@ -197,7 +220,9 @@ mod tests {
                 "",
                 CommandParameter {
                     key: "hw".to_string(),
-                    value: String("Hello, world!".to_string())
+                    value: String {
+                        value: "Hello, world!".to_string()
+                    }
                 }
             ))
         );
@@ -208,7 +233,9 @@ mod tests {
                 "",
                 CommandParameter {
                     key: "konnnitiha".to_string(),
-                    value: String("こんにちは。\\ \"Hello\" \\".to_string())
+                    value: String {
+                        value: "こんにちは。\\ \"Hello\" \\".to_string()
+                    }
                 }
             ))
         );
@@ -218,7 +245,7 @@ mod tests {
             Ok((
                 "",
                 command_params! {
-                    "" => String("strstr".to_string())
+                    "" => String{ value: "strstr".to_string() }
                 }
             ))
         );

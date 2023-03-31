@@ -43,7 +43,9 @@ pub fn parse_passage_line(
 
             if c == '@' {
                 if !text_buffer.is_empty() {
-                    ret.push(PassageContent::Text(PassageContentText(text_buffer)));
+                    ret.push(PassageContent::Text(PassageContentText {
+                        value: text_buffer,
+                    }));
                     text_buffer = String::new();
                 }
 
@@ -114,7 +116,9 @@ pub fn parse_passage_line(
         }
 
         if !text_buffer.is_empty() {
-            ret.push(PassageContent::Text(PassageContentText(text_buffer)));
+            ret.push(PassageContent::Text(PassageContentText {
+                value: text_buffer,
+            }));
         }
         Ok((str, ret))
     }
@@ -133,9 +137,10 @@ mod tests {
     impl PartialEq for PassageContent {
         fn eq(&self, other: &Self) -> bool {
             match (self, other) {
-                (Self::Text(PassageContentText(l0)), Self::Text(PassageContentText(r0))) => {
-                    l0 == r0
-                }
+                (
+                    Self::Text(PassageContentText { value: l_value }),
+                    Self::Text(PassageContentText { value: r_value }),
+                ) => l_value == r_value,
                 (
                     Self::Function(PassageContentFunction {
                         name: l_name,
@@ -174,7 +179,7 @@ mod tests {
                 vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
                     parameters: command_params! {
-                        "p" => Number(None, 1.0)
+                        "p" => Number { number: 1.0, unit: None }
                     },
                     body: None,
                 })]
@@ -200,7 +205,7 @@ mod tests {
                 vec![PassageContent::Function(PassageContentFunction {
                     name: "aaa".to_string(),
                     parameters: command_params! {
-                        "p" => Number(None, 1.0)
+                        "p" => Number { number: 1.0, unit: None }
                     },
                     body: Some("bbb".to_string())
                 })]
@@ -212,13 +217,17 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    PassageContent::Text(PassageContentText("left ".to_string())),
+                    PassageContent::Text(PassageContentText {
+                        value: "left ".to_string()
+                    }),
                     PassageContent::Function(PassageContentFunction {
                         name: "func".to_string(),
                         parameters: command_params! {},
                         body: None,
                     }),
-                    PassageContent::Text(PassageContentText(" right".to_string()))
+                    PassageContent::Text(PassageContentText {
+                        value: " right".to_string()
+                    })
                 ]
             ))
         );
@@ -228,15 +237,19 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    PassageContent::Text(PassageContentText("おはようございます ".to_string())),
+                    PassageContent::Text(PassageContentText {
+                        value: "おはようございます ".to_string()
+                    }),
                     PassageContent::Function(PassageContentFunction {
                         name: "konnnitiha".to_string(),
                         parameters: command_params! {
-                            "" => Number(Some("px".to_string()), 16.0)
+                            "" => Number { number: 16.0, unit: Some("px".to_string()) }
                         },
                         body: Some("".to_string()),
                     }),
-                    PassageContent::Text(PassageContentText("こんばんは".to_string()))
+                    PassageContent::Text(PassageContentText {
+                        value: "こんばんは".to_string()
+                    })
                 ]
             ))
         );
@@ -251,15 +264,19 @@ abc @func[
             Ok((
                 "",
                 vec![
-                    PassageContent::Text(PassageContentText("abc ".to_string())),
+                    PassageContent::Text(PassageContentText {
+                        value: "abc ".to_string()
+                    }),
                     PassageContent::Function(PassageContentFunction {
                         name: "func".to_string(),
                         parameters: command_params! {
-                            "p" => String("q".to_string())
+                            "p" => String { value: "q".to_string() }
                         },
                         body: None,
                     }),
-                    PassageContent::Text(PassageContentText(" def".to_string()))
+                    PassageContent::Text(PassageContentText {
+                        value: " def".to_string()
+                    })
                 ]
             ))
         );

@@ -85,9 +85,9 @@ pub(crate) fn parse_environment(
 
                             assert!(line.len() > 0);
                             if 0 < buffer.len() {
-                                buffer.push(PassageContent::Text(PassageContentText(
-                                    "\n".to_string(),
-                                )));
+                                buffer.push(PassageContent::Text(PassageContentText {
+                                    value: "\n".to_string(),
+                                }));
                             }
                             buffer.append(&mut line);
 
@@ -198,13 +198,17 @@ mod tests {
             Ok((
                 "",
                 vec![
-                    PassageContent::Text(PassageContentText("left ".to_string())),
+                    PassageContent::Text(PassageContentText {
+                        value: "left ".to_string()
+                    }),
                     PassageContent::Function(PassageContentFunction {
                         name: "func".to_string(),
                         parameters: command_params! {},
                         body: Some("body".to_string())
                     }),
-                    PassageContent::Text(PassageContentText(" right".to_string()))
+                    PassageContent::Text(PassageContentText {
+                        value: " right".to_string()
+                    })
                 ]
             ))
         );
@@ -224,14 +228,20 @@ mod tests {
                 EnvironmentElement {
                     name: "name".to_string(),
                     parameters: command_params! {
-                        "string" => String("あいうえお".to_string()),
-                        "number" => Number(None, 1.1)
+                        "string" => String { value: "あいうえお".to_string() },
+                        "number" => Number { number: 1.1, unit: None }
                     },
                     children: vec![LitedownElement::Passage(PassageElement {
                         contents: vec![
-                            PassageContent::Text(PassageContentText("aaa".to_string())),
-                            PassageContent::Text(PassageContentText("\n".to_string())),
-                            PassageContent::Text(PassageContentText("bbb".to_string()))
+                            PassageContent::Text(PassageContentText {
+                                value: "aaa".to_string()
+                            }),
+                            PassageContent::Text(PassageContentText {
+                                value: "\n".to_string()
+                            }),
+                            PassageContent::Text(PassageContentText {
+                                value: "bbb".to_string()
+                            })
                         ]
                     })]
                 }
@@ -256,15 +266,21 @@ mod tests {
                     children: vec![
                         LitedownElement::Passage(PassageElement {
                             contents: vec![
-                                PassageContent::Text(PassageContentText("line 1".to_string())),
-                                PassageContent::Text(PassageContentText("\n".to_string())),
-                                PassageContent::Text(PassageContentText("line 2".to_string()))
+                                PassageContent::Text(PassageContentText {
+                                    value: "line 1".to_string()
+                                }),
+                                PassageContent::Text(PassageContentText {
+                                    value: "\n".to_string()
+                                }),
+                                PassageContent::Text(PassageContentText {
+                                    value: "line 2".to_string()
+                                })
                             ]
                         }),
                         LitedownElement::Passage(PassageElement {
-                            contents: vec![PassageContent::Text(PassageContentText(
-                                "line 3".to_string()
-                            ))]
+                            contents: vec![PassageContent::Text(PassageContentText {
+                                value: "line 3".to_string()
+                            })]
                         })
                     ]
                 }
@@ -298,38 +314,50 @@ mod tests {
                     children: vec![
                         LitedownElement::Passage(PassageElement {
                             contents: vec![
-                                PassageContent::Text(PassageContentText("aaa".to_string())),
-                                PassageContent::Text(PassageContentText("\n".to_string())),
-                                PassageContent::Text(PassageContentText("bbb".to_string()))
+                                PassageContent::Text(PassageContentText {
+                                    value: "aaa".to_string()
+                                }),
+                                PassageContent::Text(PassageContentText {
+                                    value: "\n".to_string()
+                                }),
+                                PassageContent::Text(PassageContentText {
+                                    value: "bbb".to_string()
+                                })
                             ]
                         }),
                         LitedownElement::Passage(PassageElement {
-                            contents: vec![PassageContent::Text(PassageContentText(
-                                "ccc".to_string()
-                            ))]
+                            contents: vec![PassageContent::Text(PassageContentText {
+                                value: "ccc".to_string()
+                            })]
                         }),
                         LitedownElement::Environment(EnvironmentElement {
                             name: "env2".to_string(),
                             parameters: command_params! {},
                             children: vec![
                                 LitedownElement::Passage(PassageElement {
-                                    contents: vec![PassageContent::Text(PassageContentText(
-                                        "xxx".to_string()
-                                    ))]
+                                    contents: vec![PassageContent::Text(PassageContentText {
+                                        value: "xxx".to_string()
+                                    })]
                                 }),
                                 LitedownElement::Passage(PassageElement {
                                     contents: vec![
-                                        PassageContent::Text(PassageContentText("yyy".to_string())),
-                                        PassageContent::Text(PassageContentText("\n".to_string())),
-                                        PassageContent::Text(PassageContentText("zzz".to_string()))
+                                        PassageContent::Text(PassageContentText {
+                                            value: "yyy".to_string()
+                                        }),
+                                        PassageContent::Text(PassageContentText {
+                                            value: "\n".to_string()
+                                        }),
+                                        PassageContent::Text(PassageContentText {
+                                            value: "zzz".to_string()
+                                        })
                                     ]
                                 }),
                             ]
                         }),
                         LitedownElement::Passage(PassageElement {
-                            contents: vec![PassageContent::Text(PassageContentText(
-                                "ddd".to_string()
-                            ))]
+                            contents: vec![PassageContent::Text(PassageContentText {
+                                value: "ddd".to_string()
+                            })]
                         })
                     ]
                 }

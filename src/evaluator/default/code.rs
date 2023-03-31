@@ -45,7 +45,7 @@ impl EnvironmentEvaluator for CodeBlock {
                                 if inner.is_some() {
                                     bail!("Only 1 passage is allowed");
                                 }
-                                inner = Some(content.0.clone());
+                                inner = Some(content.value.clone());
                             }
                             PassageContent::Function(content) => match content.name.as_str() {
                                 "src" => match &content.body {

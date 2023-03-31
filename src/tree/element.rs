@@ -29,7 +29,9 @@ pub enum PassageContent {
 }
 
 #[derive(Clone, Debug, SerdeSerialize)]
-pub struct PassageContentText(pub String);
+pub struct PassageContentText {
+    pub value: String,
+}
 
 #[derive(Clone, Debug, SerdeSerialize)]
 pub struct PassageContentFunction {
@@ -83,7 +85,7 @@ mod tree_string {
             builder.add_node(level, "Passage");
             for c in &self.contents {
                 match c {
-                    PassageContent::Text(PassageContentText(text)) => {
+                    PassageContent::Text(PassageContentText { value: text }) => {
                         builder.add_node(level + 1, format!("Text({:?})", text))
                     }
                     PassageContent::Function(PassageContentFunction {

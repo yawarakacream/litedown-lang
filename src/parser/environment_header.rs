@@ -55,6 +55,7 @@ pub fn parse_environment_header(
 
 #[cfg(test)]
 mod tests {
+
     use crate::{
         command_params, parser::environment_header::parse_environment_header,
         tree::element::EnvironmentHeader, tree::parameter::CommandParameterValue::*,
@@ -75,7 +76,7 @@ mod tests {
                 EnvironmentHeader {
                     name: "headername".to_string(),
                     parameters: command_params! {
-                        "" => Number(None, 2.4)
+                        ""=>Number{number:2.4, unit:None}
                     }
                 }
             ))
@@ -90,10 +91,10 @@ mod tests {
                 EnvironmentHeader {
                     name: "headername".to_string(),
                     parameters: command_params! {
-                        "string" => String("aa\"あ".to_string()),
-                        "number" => Number(None, 1.1),
-                        "pixel" => Number(Some("px".to_string()), 5.0),
-                        "M" => Number(Some("em".to_string()), -7.8)
+                        "string" => String { value: "aa\"あ".to_string() },
+                        "number" => Number { number: 1.1, unit: None },
+                        "pixel" => Number { number: 5.0, unit: Some("px".to_string()) },
+                        "M" => Number { number: -7.8, unit: Some("em".to_string()) }
                     }
                 }
             ))
@@ -111,8 +112,8 @@ mod tests {
                 EnvironmentHeader {
                     name: "name".to_string(),
                     parameters: command_params! {
-                        "aiueo" => String("あいうえお".to_string()),
-                        "iti-ni" => Number(None, 12.0)
+                        "aiueo" => String { value: "あいうえお".to_string() },
+                        "iti-ni" => Number { number: 12.0, unit: None }
                     }
                 }
             ))
