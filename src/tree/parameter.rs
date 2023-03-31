@@ -7,7 +7,7 @@ use serde::{
     Serialize, Serializer,
 };
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum CommandParameterValue {
     String(String),
     Number(Option<String>, f64),
@@ -32,7 +32,7 @@ pub fn stringify_number_parameter(unit: &Option<String>, number: f64) -> String 
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct CommandParameter {
     pub key: String,
     pub value: CommandParameterValue,
@@ -73,7 +73,7 @@ impl CommandParameter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct CommandParameterContainer {
     parameters: HashMap<String, CommandParameter>,
 }

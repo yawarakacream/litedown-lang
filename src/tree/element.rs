@@ -2,36 +2,36 @@ use super::parameter::CommandParameterContainer;
 
 use serde::Serialize as SerdeSerialize;
 
-#[derive(Debug, SerdeSerialize)]
+#[derive(Clone, Debug, SerdeSerialize)]
 #[serde(tag = "__struct")]
 pub enum LitedownElement {
     Environment(EnvironmentElement),
     Passage(PassageElement),
 }
 
-#[derive(Debug, SerdeSerialize)]
+#[derive(Clone, Debug, SerdeSerialize)]
 pub struct EnvironmentElement {
     pub name: String,
     pub parameters: CommandParameterContainer,
     pub children: Vec<LitedownElement>,
 }
 
-#[derive(Debug, SerdeSerialize)]
+#[derive(Clone, Debug, SerdeSerialize)]
 pub struct PassageElement {
     pub contents: Vec<PassageContent>,
 }
 
-#[derive(Debug, SerdeSerialize)]
+#[derive(Clone, Debug, SerdeSerialize)]
 #[serde(tag = "__struct")]
 pub enum PassageContent {
     Text(PassageContentText),
     Function(PassageContentFunction),
 }
 
-#[derive(Debug, SerdeSerialize)]
+#[derive(Clone, Debug, SerdeSerialize)]
 pub struct PassageContentText(pub String);
 
-#[derive(Debug, SerdeSerialize)]
+#[derive(Clone, Debug, SerdeSerialize)]
 pub struct PassageContentFunction {
     pub name: String,
     pub parameters: CommandParameterContainer,
