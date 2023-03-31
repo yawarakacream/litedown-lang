@@ -5,11 +5,12 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[dependencies]
+anyhow = "1.0"
+headless_chrome = {git = "https://github.com/atroche/rust-headless-chrome"}
+serde = { version = "1.0.155" }
+
 [dependencies.nom]
 version = "7"
 default-features = false
 features = ["alloc"]
-
-[dependencies]
-headless_chrome = {git = "https://github.com/atroche/rust-headless-chrome"}
-anyhow = "1.0"

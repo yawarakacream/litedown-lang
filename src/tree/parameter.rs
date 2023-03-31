@@ -2,6 +2,11 @@ use std::{collections::HashMap, fmt};
 
 use anyhow::{bail, Result};
 
+use serde::{
+    ser::{SerializeMap, SerializeStruct},
+    Serialize, Serializer,
+};
+
 #[derive(Debug)]
 pub enum CommandParameterValue {
     String(String),
@@ -103,6 +108,42 @@ impl CommandParameterContainer {
             Some(value) => Ok(value),
             None => bail!("Parameter '{}' not found", key),
         }
+    }
+}
+
+impl Serialize for CommandParameterValue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            CommandParameterValue::String(value) => {
+                let mut state = serializer.serialize_struct("CommandParameterValue", 2)?;
+                state.serialize_field("__struct", "String")?;
+                state.serialize_field("value", value)?;
+                state.end()
+            }
+            CommandParameterValue::Number(unit, number) => {
+                let mut state = serializer.serialize_struct("CommandParameterValue", 3)?;
+                state.serialize_field("__struct", "Number")?;
+                state.serialize_field("unit", unit)?;
+                state.serialize_field("number", number)?;
+                state.end()
+            }
+        }
+    }
+}
+
+impl Serialize for CommandParameterContainer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_map(Some(self.parameters.len()))?;
+        for CommandParameter { key, value } in self.parameters.values() {
+            state.serialize_entry(key, value)?;
+        }
+        state.end()
     }
 }
 
