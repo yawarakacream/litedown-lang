@@ -5,7 +5,7 @@ use anyhow::{bail, Result};
 use serde::{ser::SerializeMap, Serialize as SerdeSerialize, Serializer as SerdeSerializer};
 
 #[derive(Clone, Debug, SerdeSerialize)]
-#[serde(tag = "__struct")]
+#[serde(tag = "struct")]
 pub enum CommandParameterValue {
     String { value: String },
     Number { number: f64, unit: Option<String> },
