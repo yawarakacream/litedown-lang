@@ -3,7 +3,7 @@ use super::parameter::CommandParameterContainer;
 use serde::Serialize as SerdeSerialize;
 
 #[derive(Clone, Debug, SerdeSerialize)]
-#[serde(tag = "__struct")]
+#[serde(tag = "struct")]
 pub enum LitedownElement {
     Environment(EnvironmentElement),
     Passage(PassageElement),
@@ -22,7 +22,7 @@ pub struct PassageElement {
 }
 
 #[derive(Clone, Debug, SerdeSerialize)]
-#[serde(tag = "__struct")]
+#[serde(tag = "struct")]
 pub enum PassageContent {
     Text(PassageContentText),
     Function(PassageContentFunction),
