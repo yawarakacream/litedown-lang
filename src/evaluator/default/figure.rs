@@ -35,12 +35,19 @@ impl EnvironmentEvaluator for Figure {
             element to figure with lde;
             environment: {
                 caption: (child_environment) => {
-                    let tag = child_environment.parameters.try_get("tag")?.try_into_string()?;
-                    let tag_index = self.tag_indices.entry(tag.to_string()).or_insert(1);
                     let mut figcaption_tag = HtmlElement::new("div");
                     figcaption_tag.set_attr("class", "tag");
-                    figcaption_tag.append_text(&format!("{tag} {tag_index}"));
-                    *tag_index += 1;
+                    if let Ok(tag) = child_environment.parameters.try_get("tag") {
+                        let tag = tag.try_into_string()?;
+                        let tag_index = self.tag_indices.entry(tag.to_string()).or_insert(1);
+                        figcaption_tag.append_text(&format!("{tag} {tag_index}"));
+                        *tag_index += 1;
+                    } else if let Ok(raw_tag) = child_environment.parameters.try_get("raw-tag") {
+                        let raw_tag = raw_tag.try_into_string()?;
+                        figcaption_tag.append_text(&raw_tag);
+                    } else {
+                        bail!("No tag");
+                    }
 
                     let mut figcaption_content = HtmlElement::new("div");
                     figcaption_content.set_attr("class", "content");

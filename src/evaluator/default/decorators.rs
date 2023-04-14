@@ -22,7 +22,7 @@ impl FunctionEvaluator for BoldText {
     ) -> Result<Option<HtmlElement>> {
         match &content.body {
             Some(body) => {
-                let mut strong = HtmlElement::new("strong");
+                let mut strong = HtmlElement::new("bold");
                 strong.append_text(body);
                 Ok(Some(strong))
             }
@@ -31,15 +31,15 @@ impl FunctionEvaluator for BoldText {
     }
 }
 
-pub struct InlineMath;
+pub struct StrongText;
 
-impl InlineMath {
+impl StrongText {
     pub fn new() -> Box<dyn FunctionEvaluator> {
-        Box::new(InlineMath {})
+        Box::new(StrongText {})
     }
 }
 
-impl FunctionEvaluator for InlineMath {
+impl FunctionEvaluator for StrongText {
     fn eval(
         &mut self,
         _: &mut LitedownEvaluator,
@@ -47,10 +47,9 @@ impl FunctionEvaluator for InlineMath {
     ) -> Result<Option<HtmlElement>> {
         match &content.body {
             Some(body) => {
-                let mut span = HtmlElement::new("span");
-                span.set_attr("class", "inline-math");
-                span.append_raw_text(body);
-                Ok(Some(span))
+                let mut strong = HtmlElement::new("strong");
+                strong.append_text(body);
+                Ok(Some(strong))
             }
             None => bail!("The body is empty"),
         }

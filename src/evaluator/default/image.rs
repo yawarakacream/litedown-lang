@@ -24,6 +24,9 @@ impl FunctionEvaluator for Image {
             Some(body) => {
                 let mut img = HtmlElement::new_void("img");
                 img.set_attr("src", body.as_str());
+                if let Ok(tag) = content.parameters.try_get("height") {
+                    img.set_attr("height", &tag.value.to_string());
+                }
                 Ok(Some(img))
             }
             None => bail!("src is empty"),

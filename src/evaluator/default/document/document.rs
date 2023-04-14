@@ -5,14 +5,21 @@ use anyhow::{bail, Result};
 use crate::{
     eval_with_litedown,
     evaluator::environment::EnvironmentEvaluator,
-    evaluator::{default::document::title::Title, litedown::LitedownEvaluator},
+    evaluator::{
+        default::{
+            decorators::StrongText,
+            document::title::Title,
+            math::{DisplayMath, InlineMath},
+        },
+        litedown::LitedownEvaluator,
+    },
     tree::{element::EnvironmentElement, parameter::stringify_number_parameter},
     utility::html::HtmlElement,
 };
 
 use crate::evaluator::default::{
     code::{CodeBlock, InlineCode},
-    decorators::{BoldText, InlineMath, Link},
+    decorators::{BoldText, Link},
     figure::Figure,
     image::Image,
     list::List,
@@ -76,12 +83,14 @@ impl Document {
         evaluator.set_environment("code", CodeBlock::new());
         evaluator.set_environment("figure", Figure::new());
         evaluator.set_environment("minipages", MiniPages::new());
+        evaluator.set_environment("math", DisplayMath::new());
 
         evaluator.set_function("link", Link::new());
         evaluator.set_function("pagebreak", PageBreak::new());
         evaluator.set_function("code", InlineCode::new());
         evaluator.set_function("math", InlineMath::new());
         evaluator.set_function("bold", BoldText::new());
+        evaluator.set_function("strong", StrongText::new());
         evaluator.set_function("image", Image::new());
 
         evaluator
@@ -253,9 +262,20 @@ impl EnvironmentEvaluator for Document {
                     math_load_script.append_raw_text(
                         r#"
                         window.addEventListener("DOMContentLoaded", () => {
+                            const macros = {};
+                            Array.from(document.getElementsByClassName("display-math")).forEach((el) => {
+                                console.log(el.innerText);
+                                katex.render(el.innerText, el, {
+                                    throwOnError: false,
+                                    displayMode: true,
+                                    macros,
+                                });
+                            });
                             Array.from(document.getElementsByClassName("inline-math")).forEach((el) => {
-                                katex.render(el.innerHTML, el, {
-                                    throwOnError: false
+                                katex.render(el.innerText, el, {
+                                    throwOnError: false,
+                                    displayMode: false,
+                                    macros,
                                 });
                             });
                         });
