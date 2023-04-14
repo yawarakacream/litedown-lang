@@ -213,7 +213,8 @@ pub(crate) fn parse_environment(
     }
 }
 
-pub fn parse_litedown(source_path: Option<PathBuf>, source_code: &str) -> Result<LitedownAst> {
+pub fn parse_litedown(source_path: Option<&PathBuf>, source_code: &str) -> Result<LitedownAst> {
+    let source_path = source_path.map(|sp| sp.clone());
     let mut source_code = source_code;
     let mut roots = Vec::new();
     while !source_code.is_empty() {
