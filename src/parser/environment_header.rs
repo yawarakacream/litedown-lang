@@ -1,5 +1,5 @@
 use nom::{
-    character::complete::{char, line_ending, space0},
+    character::complete::{anychar, char, line_ending, space0},
     error::VerboseError,
 };
 
@@ -43,11 +43,23 @@ pub fn parse_environment_header(
         let (str, name) = namestr(str)?;
         let (str, parameters) = parse_command_parameter_container(indent)(str)
             .unwrap_or((str, CommandParameterContainer::new()));
-        let (str, _) = char('@')(str)?;
 
+        let (str, c) = anychar(str)?;
+        let raw_body = match c {
+            '@' => false,
+            ':' => true,
+            _ => {
+                return Err(verror!(
+                    "parse_environment_header",
+                    str,
+                    "invalid last splitter"
+                ))
+            }
+        };
         let result = EnvironmentHeader {
             name: name.to_string(),
             parameters,
+            raw_body,
         };
         Ok((str, result))
     }
@@ -77,7 +89,8 @@ mod tests {
                     name: "headername".to_string(),
                     parameters: command_params! {
                         ""=>Number{number:2.4, unit:None}
-                    }
+                    },
+                    raw_body: false,
                 }
             ))
         );
@@ -95,7 +108,8 @@ mod tests {
                         "number" => Number { number: 1.1, unit: None },
                         "pixel" => Number { number: 5.0, unit: Some("px".to_string()) },
                         "M" => Number { number: -7.8, unit: Some("em".to_string()) }
-                    }
+                    },
+                    raw_body: false,
                 }
             ))
         );
@@ -114,7 +128,8 @@ mod tests {
                     parameters: command_params! {
                         "aiueo" => String { value: "あいうえお".to_string() },
                         "iti-ni" => Number { number: 12.0, unit: None }
-                    }
+                    },
+                    raw_body: false,
                 }
             ))
         )

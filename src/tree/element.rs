@@ -44,6 +44,7 @@ pub struct PassageContentFunction {
 pub struct EnvironmentHeader {
     pub name: String,
     pub parameters: CommandParameterContainer,
+    pub raw_body: bool,
 }
 
 mod tree_string {

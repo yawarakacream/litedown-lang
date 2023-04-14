@@ -17,7 +17,9 @@ use crate::{
             EnvironmentElement, LitedownElement, PassageContent, PassageContentText, PassageElement,
         },
     },
-    utility::nom::{any_to_line_ending, count_indent, pass_blank_lines0, IResultV},
+    utility::nom::{
+        any_to_line_ending, count_indent, pass_blank_line, pass_blank_lines0, IResultV,
+    },
     verror,
 };
 
@@ -34,89 +36,167 @@ pub(crate) fn parse_environment(
         let str = match line_ending::<&str, VerboseError<&str>>(str) {
             // multi lines
             Ok((str, _)) => {
-                let (str, _) = pass_blank_lines0(str)?;
-
-                if let Ok(_) = eof::<&str, VerboseError<&str>>(str) {
-                    return Err(verror!("parse_environment", str, "no children"));
-                }
-
-                let (_, children_indent) = count_indent(str)?;
-
-                if children_indent <= indent {
-                    return Err(verror!("parse_environment", str, "invalid indent"));
-                }
-
-                let mut str = str;
-                let mut buffer = Vec::new();
-                loop {
-                    let tmp = pass_blank_lines0(str)?;
-                    str = tmp.0;
-
-                    match parse_environment(children_indent)(str) {
-                        Ok(tmp) => {
-                            if !buffer.is_empty() {
-                                children.push(LitedownElement::Passage(PassageElement {
-                                    contents: buffer,
-                                }));
-                                buffer = Vec::new();
-                            }
+                if header.raw_body {
+                    let mut str = str;
+                    let mut buffer = Vec::new();
+                    let mut children_indent = None;
+                    loop {
+                        if let Ok(tmp) = pass_blank_line(str) {
                             str = tmp.0;
-                            children.push(LitedownElement::Environment(tmp.1));
+                            buffer.push(PassageContent::Text(PassageContentText {
+                                value: "\n".to_string(),
+                            }));
+                            continue;
                         }
-                        Err(_) => {
-                            if tmp.1 > 0 && !buffer.is_empty() {
-                                children.push(LitedownElement::Passage(PassageElement {
-                                    contents: buffer,
-                                }));
-                                buffer = Vec::new();
-                            }
 
-                            let (_, here_indent) = count_indent(str)?;
-                            if here_indent < children_indent {
-                                break; // pass to parent environment
-                            }
-                            if children_indent < here_indent {
+                        if children_indent.is_none() {
+                            let tmp = count_indent(str)?;
+                            if tmp.1 <= indent {
                                 return Err(verror!("parse_environment", str, "invalid indent"));
                             }
+                            children_indent = Some(tmp.1);
+                        }
+                        let children_indent = children_indent.unwrap();
 
-                            let tmp = parse_passage_line(here_indent)(str)?;
-                            str = tmp.0;
-                            let mut line = tmp.1;
+                        let tmp = count_indent(str)?;
+                        let here_indent = tmp.1;
+                        if here_indent < children_indent {
+                            break; // pass to parent environment
+                        }
 
-                            assert!(line.len() > 0);
-                            if 0 < buffer.len() {
-                                buffer.push(PassageContent::Text(PassageContentText {
-                                    value: "\n".to_string(),
-                                }));
+                        let tmp = any_to_line_ending(str)?;
+                        str = tmp.0;
+
+                        if !buffer.is_empty() {
+                            buffer.push(PassageContent::Text(PassageContentText {
+                                value: "\n".to_string(),
+                            }))
+                        }
+                        buffer.push(PassageContent::Text(PassageContentText {
+                            value: tmp.1[children_indent..].to_string(),
+                        }))
+                    }
+                    if !buffer.is_empty() {
+                        while !buffer.is_empty() {
+                            if let Some(PassageContent::Text(PassageContentText { value })) =
+                                buffer.last()
+                            {
+                                if value == "\n" {
+                                    buffer.pop();
+                                    continue;
+                                }
                             }
-                            buffer.append(&mut line);
+                            break;
+                        }
+                        children.push(LitedownElement::Passage(PassageElement {
+                            contents: buffer,
+                        }));
+                    }
+                    str
+                } else {
+                    let (str, _) = pass_blank_lines0(str)?;
 
-                            if let Ok(tmp) = eof::<&str, VerboseError<&str>>(str) {
+                    if let Ok(_) = eof::<&str, VerboseError<&str>>(str) {
+                        return Err(verror!("parse_environment", str, "no children"));
+                    }
+
+                    let (_, children_indent) = count_indent(str)?;
+
+                    if children_indent <= indent {
+                        return Err(verror!("parse_environment", str, "invalid indent"));
+                    }
+
+                    let mut str = str;
+                    let mut buffer = Vec::new();
+                    loop {
+                        let tmp = pass_blank_lines0(str)?;
+                        str = tmp.0;
+
+                        match parse_environment(children_indent)(str) {
+                            Ok(tmp) => {
+                                if !buffer.is_empty() {
+                                    children.push(LitedownElement::Passage(PassageElement {
+                                        contents: buffer,
+                                    }));
+                                    buffer = Vec::new();
+                                }
                                 str = tmp.0;
-                                break;
+                                children.push(LitedownElement::Environment(tmp.1));
+                            }
+                            Err(_) => {
+                                if tmp.1 > 0 && !buffer.is_empty() {
+                                    children.push(LitedownElement::Passage(PassageElement {
+                                        contents: buffer,
+                                    }));
+                                    buffer = Vec::new();
+                                }
+
+                                let (_, here_indent) = count_indent(str)?;
+                                if here_indent < children_indent {
+                                    break; // pass to parent environment
+                                }
+                                if children_indent < here_indent {
+                                    return Err(verror!(
+                                        "parse_environment",
+                                        str,
+                                        "invalid indent"
+                                    ));
+                                }
+
+                                let tmp = parse_passage_line(here_indent)(str)?;
+                                str = tmp.0;
+                                let mut line = tmp.1;
+
+                                assert!(line.len() > 0);
+                                if 0 < buffer.len() {
+                                    buffer.push(PassageContent::Text(PassageContentText {
+                                        value: "\n".to_string(),
+                                    }));
+                                }
+                                buffer.append(&mut line);
+
+                                if let Ok(tmp) = eof::<&str, VerboseError<&str>>(str) {
+                                    str = tmp.0;
+                                    break;
+                                }
                             }
                         }
                     }
+                    if !buffer.is_empty() {
+                        children.push(LitedownElement::Passage(PassageElement {
+                            contents: buffer,
+                        }));
+                    }
+                    str
                 }
-                if !buffer.is_empty() {
-                    children.push(LitedownElement::Passage(PassageElement {
-                        contents: buffer,
-                    }));
-                }
-                str
             }
 
             // inline
             Err(_) => {
-                if let Ok((str, _)) = eof::<&str, VerboseError<&str>>(str) {
-                    return Err(verror!("parse_environment", str, "no children"));
+                if header.raw_body {
+                    if let Ok((str, _)) = eof::<&str, VerboseError<&str>>(str) {
+                        return Err(verror!("parse_environment", str, "no children"));
+                    }
+
+                    let (str, line) = any_to_line_ending(str)?;
+
+                    children.push(LitedownElement::Passage(PassageElement {
+                        contents: vec![PassageContent::Text(PassageContentText {
+                            value: line.to_string(),
+                        })],
+                    }));
+                    str
+                } else {
+                    if let Ok((str, _)) = eof::<&str, VerboseError<&str>>(str) {
+                        return Err(verror!("parse_environment", str, "no children"));
+                    }
+
+                    let (str, line) = any_to_line_ending(str)?;
+                    let (_, line) = parse_passage_line(0)(&line)?;
+
+                    children.push(LitedownElement::Passage(PassageElement { contents: line }));
+                    str
                 }
-
-                let (str, line) = any_to_line_ending(str)?;
-                let (_, line) = parse_passage_line(0)(&line)?;
-
-                children.push(LitedownElement::Passage(PassageElement { contents: line }));
-                str
             }
         };
 
