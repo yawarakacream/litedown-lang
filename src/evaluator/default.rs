@@ -4,5 +4,7 @@ pub mod document;
 pub mod figure;
 pub mod image;
 pub mod list;
+pub mod math;
 pub mod minipages;
 pub mod section;
+pub mod slide;
