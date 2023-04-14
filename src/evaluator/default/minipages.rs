@@ -45,7 +45,7 @@ impl EnvironmentEvaluator for MiniPages {
             Some(parameter) => {
                 let number = parameter.try_into_bare_number()?;
                 let number = number as isize;
-                if 0 < number {
+                if number <= 0 {
                     bail!("Invalid parameter 'columns': must be positive");
                 }
                 Some(number as usize)
