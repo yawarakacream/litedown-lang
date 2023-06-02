@@ -64,6 +64,10 @@ body {
         margin-bottom: 1rem;
         display: block;
 
+        &:not(:first-of-type) {
+          margin-top: 1rem;
+        }
+
         &[data-level="primary"] {
           font-size: 1.5em;
           color: royalblue;
@@ -104,4 +108,10 @@ figure {
 
 ul, ol {
   padding-left: 2em;
+}
+
+hr {
+  margin: 1em 0;
+  border: none;
+  border-bottom: 1px dashed black;
 }

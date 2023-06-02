@@ -4,7 +4,7 @@ use crate::{
     evaluator::environment::EnvironmentEvaluator,
     evaluator::{
         default::{
-            decorators::StrongText,
+            decorators::{Separator, StrongText},
             math::{DisplayMath, InlineMath},
             slide::normal_page::NormalPage,
         },
@@ -91,6 +91,7 @@ impl Slide {
         evaluator.set_function("bold", BoldText::new());
         evaluator.set_function("strong", StrongText::new());
         evaluator.set_function("image", Image::new());
+        evaluator.set_function("separator", Separator::new());
 
         evaluator
     }
@@ -108,6 +109,10 @@ impl EnvironmentEvaluator for Slide {
                 "16:9" => Size {
                     width: "33.867cm".to_string(),
                     height: "19.05cm".to_string(),
+                },
+                "a4" => Size {
+                    width: "210mm".to_string(),
+                    height: "297mm".to_string(),
                 },
                 _ => bail!("Invalid size"),
             };

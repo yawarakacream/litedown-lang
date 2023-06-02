@@ -86,3 +86,22 @@ impl FunctionEvaluator for Link {
         Ok(Some(anchor))
     }
 }
+
+pub struct Separator;
+
+impl Separator {
+    pub fn new() -> Box<dyn FunctionEvaluator> {
+        Box::new(Separator {})
+    }
+}
+
+impl FunctionEvaluator for Separator {
+    fn eval(
+        &mut self,
+        _: &mut LitedownEvaluator,
+        _: &PassageContentFunction,
+    ) -> Result<Option<HtmlElement>> {
+        let hr = HtmlElement::new_void("hr");
+        Ok(Some(hr))
+    }
+}

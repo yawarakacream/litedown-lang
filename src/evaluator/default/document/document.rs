@@ -7,7 +7,7 @@ use crate::{
     evaluator::environment::EnvironmentEvaluator,
     evaluator::{
         default::{
-            decorators::StrongText,
+            decorators::{Separator, StrongText},
             document::title::Title,
             math::{DisplayMath, InlineMath},
         },
@@ -92,6 +92,7 @@ impl Document {
         evaluator.set_function("bold", BoldText::new());
         evaluator.set_function("strong", StrongText::new());
         evaluator.set_function("image", Image::new());
+        evaluator.set_function("separator", Separator::new());
 
         evaluator
     }
