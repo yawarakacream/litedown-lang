@@ -7,26 +7,112 @@ use std::{
 
 use anyhow::{bail, Context, Result};
 use litedown_lang::{
-    evaluator::default::{document::document::Document, slide::slide::Slide},
-    parser::environment::parse_litedown,
+    html_evaluator::litedown::{evaluate_litedown_to_html, Ld2HtmlInput},
+    // evaluator::default::{document::document::Document, slide::slide::Slide},
+    parser::litedown::parse_litedown,
     utility::{html::print_html_to_pdf, tree_string_builder::ToTreeString},
 };
 
-enum Mode {
-    Document,
-    Slide,
-}
 struct Argument<'a> {
     path: &'a str,
-    mode: Mode,
     pdf: bool,
 }
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
+
+    // test
+    if args.len() == 1 {
+        // parse_litedown_new("@test0@")?;
+        // println!("");
+
+        // parse_litedown_new("@test1[1]@")?;
+        // println!("");
+
+        // parse_litedown_new("@test2[-2.4uda]@")?;
+        // println!("");
+
+        // parse_litedown_new("@test2[p = 1.5u]@")?;
+        // println!("");
+
+        // parse_litedown_new(r#"@test2[pfwefw = "aaa"]@"#)?;
+        // println!("");
+
+        // parse_litedown_new(r#"@test2["aaa"]@"#)?;
+        // println!("");
+
+        // parse_litedown_new(r#"@test2[hiugret, j6895, p = 54,]@"#)?;
+        // println!("");
+
+        parse_litedown(
+            r#"@test2[hiugret, j6895, p = 54]:
+  aaa
+  bbb"#,
+        )?;
+        println!("");
+
+        parse_litedown(r#"@f[p]{あいうえお@g@{かきくけこ}さしすせそ}"#)?;
+        println!("");
+
+        parse_litedown(
+            r#"@test2[hiugret, j6895, p = 54]@
+    aaa
+    bbb
+    ccc
+    
+    ddd
+    @rgn@
+        123
+        456
+
+    789
+    
+    @tr
+
+    eee
+    
+    @yu[aaa]@
+        yopkj
+        
+        @a@
+            h
+        htrui
+    k
+    "#,
+        )?;
+        println!("");
+
+        parse_litedown(
+            r#"@fff@
+    111
+    
+    @ggg@
+        222
+        
+        @hhh@
+            333
+        
+            @iii@
+                ouou
+
+                @jjj
+
+
+        aeg
+
+
+        
+        p
+        
+    444"#,
+        )?;
+        println!("");
+
+        return Ok(());
+    }
+
     let args = {
         let mut path = None;
-        let mut mode = None;
         let mut pdf = None;
         let mut i = 1;
         while i < args.len() {
@@ -47,12 +133,6 @@ fn main() -> Result<()> {
             } else {
                 if path.is_none() {
                     path = Some(arg);
-                } else if mode.is_none() {
-                    mode = Some(match arg {
-                        "document" => Mode::Document,
-                        "slide" => Mode::Slide,
-                        _ => bail!("Invalid mode: {}", arg),
-                    });
                 } else {
                     bail!("Invalid argument: {}", arg);
                 }
@@ -61,7 +141,6 @@ fn main() -> Result<()> {
         }
         Argument {
             path: path.context("No path provided")?,
-            mode: mode.context("No mode provided")?,
             pdf: pdf.unwrap_or(false),
         }
     };
@@ -83,19 +162,17 @@ fn main() -> Result<()> {
 
     // ast
     println!("Parsing {:?}", source_path);
-    let ast = parse_litedown(Some(&source_path), source_code).context("Could not parse ld")?;
+    let ast = parse_litedown(source_code).context("Could not parse ld")?;
     println!("{}", ast.to_tree_string());
 
-    let evaluator = match args.mode {
-        Mode::Document => Document::new_evaluator(),
-        Mode::Slide => Slide::new_evaluator(),
-    };
-
     // html
-    let html = evaluator
-        .eval(source_path.clone(), ast)
-        .context("Could not evaluate ast to html")?
-        .merge();
+    let html = evaluate_litedown_to_html(Ld2HtmlInput {
+        ast,
+        source_path: Some(source_path.clone()),
+    })
+    .context("Could not evaluate ast to html")?
+    .to_string()
+    .merge();
 
     let source_file_name = source_path.file_name().unwrap().to_str().unwrap();
     let source_file_name_without_ext =

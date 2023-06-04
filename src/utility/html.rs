@@ -66,6 +66,15 @@ impl HtmlElement {
         }
     }
 
+    pub fn is_child_empty(&self) -> bool {
+        if let Some(children) = &self.children {
+            if children.is_empty() {
+                return true;
+            }
+        }
+        false
+    }
+
     pub fn set_attr(&mut self, key: &str, value: &str) {
         self.attr.insert(key.to_string(), value.to_string());
     }
@@ -184,7 +193,7 @@ impl HtmlString {
     pub fn merge(&self) -> String {
         let mut buffer = String::new();
         buffer.push_str("<!DOCTYPE html>");
-        buffer.push_str("<html>");
+        buffer.push_str("<html lang=\"ja\">");
         buffer.push_str(&self.head.clone());
         buffer.push_str(&self.body.clone());
         buffer.push_str("</html>");
