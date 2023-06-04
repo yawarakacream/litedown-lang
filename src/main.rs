@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::{bail, Context, Result};
+
 use litedown_lang::{
     html_evaluator::litedown::{evaluate_litedown_to_html, Ld2HtmlInput},
     parser::litedown::parse_litedown,
@@ -27,7 +28,7 @@ fn main() -> Result<()> {
             let arg = args[i].as_str();
             if arg.starts_with("-") {
                 match &arg[1..] {
-                    "p" | "-pdf" => {
+                    "-pdf" | "p" => {
                         if pdf.is_none() {
                             pdf = Some(true);
                         } else {
