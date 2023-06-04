@@ -8,7 +8,6 @@ use std::{
 use anyhow::{bail, Context, Result};
 use litedown_lang::{
     html_evaluator::litedown::{evaluate_litedown_to_html, Ld2HtmlInput},
-    // evaluator::default::{document::document::Document, slide::slide::Slide},
     parser::litedown::parse_litedown,
     utility::{html::print_html_to_pdf, tree_string_builder::ToTreeString},
 };
@@ -20,97 +19,6 @@ struct Argument<'a> {
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
-
-    // test
-    if args.len() == 1 {
-        // parse_litedown_new("@test0@")?;
-        // println!("");
-
-        // parse_litedown_new("@test1[1]@")?;
-        // println!("");
-
-        // parse_litedown_new("@test2[-2.4uda]@")?;
-        // println!("");
-
-        // parse_litedown_new("@test2[p = 1.5u]@")?;
-        // println!("");
-
-        // parse_litedown_new(r#"@test2[pfwefw = "aaa"]@"#)?;
-        // println!("");
-
-        // parse_litedown_new(r#"@test2["aaa"]@"#)?;
-        // println!("");
-
-        // parse_litedown_new(r#"@test2[hiugret, j6895, p = 54,]@"#)?;
-        // println!("");
-
-        parse_litedown(
-            r#"@test2[hiugret, j6895, p = 54]:
-  aaa
-  bbb"#,
-        )?;
-        println!("");
-
-        parse_litedown(r#"@f[p]{あいうえお@g@{かきくけこ}さしすせそ}"#)?;
-        println!("");
-
-        parse_litedown(
-            r#"@test2[hiugret, j6895, p = 54]@
-    aaa
-    bbb
-    ccc
-    
-    ddd
-    @rgn@
-        123
-        456
-
-    789
-    
-    @tr
-
-    eee
-    
-    @yu[aaa]@
-        yopkj
-        
-        @a@
-            h
-        htrui
-    k
-    "#,
-        )?;
-        println!("");
-
-        parse_litedown(
-            r#"@fff@
-    111
-    
-    @ggg@
-        222
-        
-        @hhh@
-            333
-        
-            @iii@
-                ouou
-
-                @jjj
-
-
-        aeg
-
-
-        
-        p
-        
-    444"#,
-        )?;
-        println!("");
-
-        return Ok(());
-    }
-
     let args = {
         let mut path = None;
         let mut pdf = None;
@@ -145,9 +53,8 @@ fn main() -> Result<()> {
         }
     };
 
-    let source_path = PathBuf::from(args.path);
     let source_path =
-        fs::canonicalize(source_path).context("Could not canonicalize source path")?;
+        fs::canonicalize(PathBuf::from(args.path)).context("Could not canonicalize source path")?;
 
     // check extension
     let source_file_extension = source_path.extension().unwrap();
@@ -158,12 +65,23 @@ fn main() -> Result<()> {
         );
     }
 
-    let source_code = &fs::read_to_string(&source_path).context("Could not read source file")?;
+    let source_code = fs::read_to_string(&source_path).context("Could not read source file")?;
 
     // ast
     println!("Parsing {:?}", source_path);
-    let ast = parse_litedown(source_code).context("Could not parse ld")?;
-    println!("{}", ast.to_tree_string());
+    let ast = parse_litedown(&source_code).context("Could not parse ld")?;
+
+    let ast_string = ast.to_tree_string();
+    if ast_string.lines().count() < 16 {
+        println!("{}", ast.to_tree_string());
+    } else {
+        let output_ast_path = source_path.with_extension("ldast.txt");
+        println!("Saving ast to {:?}", output_ast_path);
+
+        let mut output_ast = File::create(&output_ast_path).unwrap();
+        writeln!(output_ast, "{}", ast_string).unwrap();
+        output_ast.flush().unwrap();
+    }
 
     // html
     let html = evaluate_litedown_to_html(Ld2HtmlInput {
@@ -174,29 +92,21 @@ fn main() -> Result<()> {
     .to_string()
     .merge();
 
-    let source_file_name = source_path.file_name().unwrap().to_str().unwrap();
-    let source_file_name_without_ext =
-        &source_file_name[0..(&source_file_name.len() - (&source_file_extension.len() + 1))];
-
     // save html
-    let output_html_path =
-        source_path.with_file_name(format!("{}.html", source_file_name_without_ext));
+    let output_html_path = source_path.with_extension("html");
+    println!("Saving html to {:?}", output_html_path);
 
-    println!("Saving to {:?}", output_html_path);
-
-    let mut output_html = File::create(&output_html_path).unwrap();
-    writeln!(output_html, "{}", html).unwrap();
-    output_html.flush().unwrap();
+    let mut output_html_file = File::create(&output_html_path).unwrap();
+    writeln!(output_html_file, "{}", html).unwrap();
+    output_html_file.flush().unwrap();
 
     // pdf
     if args.pdf {
-        let output_pdf_path =
-            source_path.with_file_name(format!("{}.pdf", source_file_name_without_ext));
+        let output_pdf_path = source_path.with_extension("pdf");
+        println!("Saving pdf to {:?}", output_pdf_path);
 
-        println!("Saving to {:?}", output_pdf_path);
-
-        let output_pdf = print_html_to_pdf(output_html_path.to_str().unwrap()).unwrap();
-        fs::write(output_pdf_path, &output_pdf).unwrap();
+        let output_pdf_data = print_html_to_pdf(output_html_path.to_str().unwrap()).unwrap();
+        fs::write(output_pdf_path, &output_pdf_data).unwrap();
     }
 
     Ok(())
