@@ -73,7 +73,7 @@ fn parse_value(iter: &mut IndentedStringIterator) -> Result<FunctionArgumentValu
 
     fn parse_string(iter: &mut IndentedStringIterator) -> Result<FunctionArgumentValue> {
         iter.parse(|iter| {
-            let delimiter = iter.next_char().context("Empty string")?;
+            let delimiter = iter.next_char().context("empty string")?;
 
             if !(delimiter == '"' || delimiter == '\'') {
                 bail!("expected delimiter, found: {}", delimiter);
@@ -100,7 +100,29 @@ fn parse_value(iter: &mut IndentedStringIterator) -> Result<FunctionArgumentValu
         })
     }
 
-    parse_number(iter).or_else(|_| parse_string(iter))
+    fn parse_array(iter: &mut IndentedStringIterator) -> Result<FunctionArgumentValue> {
+        iter.parse(|iter| {
+            iter.next_char_as('[')?;
+            iter.pass_whitespaces();
+
+            let mut value = Vec::new();
+            while let Ok(v) = parse_value(iter) {
+                value.push(v);
+                iter.pass_whitespaces();
+                if iter.next_char_as(',').is_err() {
+                    break;
+                }
+                iter.pass_whitespaces();
+            }
+
+            iter.next_char_as(']')?;
+            Ok(FunctionArgumentValue::Array { value })
+        })
+    }
+
+    parse_number(iter)
+        .or_else(|_| parse_string(iter))
+        .or_else(|_| parse_array(iter))
 }
 
 fn parse_value_with_key(iter: &mut IndentedStringIterator) -> Result<FunctionArgument> {

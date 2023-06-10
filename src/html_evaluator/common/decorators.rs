@@ -15,10 +15,7 @@ pub fn evaluate_strong(
     Ok(Some(strong_html))
 }
 
-pub fn evaluate_separator(
-    _: &Ld2HtmlEvaluator,
-    _: &LitedownFunction,
-) -> Result<Option<HtmlElement>> {
+pub fn evaluate_divider(_: &Ld2HtmlEvaluator, _: &LitedownFunction) -> Result<Option<HtmlElement>> {
     let hr = HtmlElement::new_void("hr");
     Ok(Some(hr))
 }

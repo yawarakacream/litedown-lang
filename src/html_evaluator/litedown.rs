@@ -15,8 +15,9 @@ use crate::{
 use super::{
     common::{
         code::evaluate_code,
-        decorators::{evaluate_link, evaluate_separator, evaluate_strong},
+        decorators::{evaluate_divider, evaluate_link, evaluate_strong},
         figure::evaluate_figure,
+        grid::evaluate_grid,
         image::evaluate_image,
         list::evaluate_list,
         math::evaluate_math,
@@ -39,8 +40,9 @@ impl ContentMode {
         function_evaluators.insert("figure".to_string(), evaluate_figure);
         function_evaluators.insert("image".to_string(), evaluate_image);
         function_evaluators.insert("code".to_string(), evaluate_code);
-        function_evaluators.insert("separator".to_string(), evaluate_separator);
+        function_evaluators.insert("divider".to_string(), evaluate_divider);
         function_evaluators.insert("link".to_string(), evaluate_link);
+        function_evaluators.insert("grid".to_string(), evaluate_grid);
 
         match &self {
             ContentMode::Document => {
@@ -154,11 +156,11 @@ impl Ld2HtmlEvaluator {
     fn get_main_head(preamble: &Preamble) -> Vec<HtmlElement> {
         let mut result = Vec::new();
 
-        // main.less
+        // common.less
         result.push({
             let mut element = HtmlElement::new("style");
             element.set_attr("type", "text/less");
-            element.append_raw_text(include_str!("./main.less"));
+            element.append_raw_text(include_str!("./common/common.less"));
             element
         });
 

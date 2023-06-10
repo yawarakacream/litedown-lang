@@ -7,14 +7,33 @@ pub enum FunctionArgumentValue {
     String { value: String },
     Integer { number: isize, unit: String },
     Float { number: f64, unit: String },
+    Array { value: Vec<FunctionArgumentValue> },
 }
 
 impl fmt::Display for FunctionArgumentValue {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            FunctionArgumentValue::String { value } => write!(f, "{}", value),
-            FunctionArgumentValue::Integer { number, unit } => write!(f, "{}{}", number, unit),
-            FunctionArgumentValue::Float { number, unit } => write!(f, "{}{}", number, unit),
+            FunctionArgumentValue::String { value } => {
+                write!(formatter, "{}", value)
+            }
+            FunctionArgumentValue::Integer { number, unit } => {
+                write!(formatter, "{}{}", number, unit)
+            }
+            FunctionArgumentValue::Float { number, unit } => {
+                write!(formatter, "{}{}", number, unit)
+            }
+            FunctionArgumentValue::Array { value } => {
+                write!(formatter, "[")?;
+                let mut f = true;
+                for v in value {
+                    if f {
+                        write!(formatter, ", ")?;
+                        f = false;
+                    }
+                    write!(formatter, "{}", v)?;
+                }
+                write!(formatter, "]")
+            }
         }
     }
 }
@@ -37,13 +56,21 @@ impl FunctionArgument {
         bail!("invalid argument: {} is not Integer", self.value);
     }
 
-    pub fn try_into_bare_integer(&self) -> Result<(isize, &String)> {
+    pub fn try_into_bare_integer(&self) -> Result<isize> {
         if let FunctionArgumentValue::Integer { number, unit } = &self.value {
             if unit.is_empty() {
-                return Ok((*number, unit));
+                return Ok(*number);
             }
         }
         bail!("invalid argument: {} is not bare Integer", self.value);
+    }
+
+    pub fn try_into_bare_unsigned_integer(&self) -> Result<usize> {
+        let ret = self.try_into_bare_integer()?;
+        if let Ok(ret) = usize::try_from(ret) {
+            return Ok(ret);
+        }
+        bail!("invalid argument: {} is not unsigned Integer", self.value);
     }
 
     pub fn try_into_float(&self) -> Result<(f64, &String)> {
@@ -68,5 +95,12 @@ impl FunctionArgument {
             }
         }
         bail!("invalid argument: {} is not bare Float", self.value);
+    }
+
+    pub fn try_into_array(&self) -> Result<&Vec<FunctionArgumentValue>> {
+        if let FunctionArgumentValue::Array { value } = &self.value {
+            return Ok(value);
+        }
+        bail!("invalid argument: {} is not Array", self.value);
     }
 }

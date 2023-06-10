@@ -135,7 +135,7 @@ fn evaluate_title(
                     bail!("'title' got multiple 'author'");
                 }
                 let mut author_html_0 = HtmlElement::new("div");
-                author_html_0.set_attr("class", "subtitle");
+                author_html_0.set_attr("class", "author");
                 evaluate_with_ld2html_evaluator!(function to author_html_0 with evaluator);
                 author_html = Some(author_html_0);
             }
