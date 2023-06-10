@@ -7,7 +7,7 @@ use super::function_argument::FunctionArgument;
 #[derive(Debug)]
 pub struct LitedownFunction {
     pub name: String,
-    pub parameters: FunctionArgumentContainer,
+    pub arguments: FunctionArgumentContainer,
     pub body: FunctionBody,
 }
 
@@ -18,13 +18,13 @@ pub struct FunctionArgumentContainer {
 
 impl FunctionArgumentContainer {
     pub fn new(arguments: Vec<FunctionArgument>) -> Result<Self> {
-        let mut use_named_parameter = false;
+        let mut use_named_argument = false;
         for param in &arguments {
             if param.name.is_some() {
-                use_named_parameter = true;
+                use_named_argument = true;
             } else {
-                if use_named_parameter {
-                    bail!("Cannot use unnamed parameter after named parameter");
+                if use_named_argument {
+                    bail!("Cannot use unnamed argument after named argument");
                 }
             }
         }
@@ -40,19 +40,19 @@ impl FunctionArgumentContainer {
     }
 
     pub fn get_by_index(&self, index: usize) -> Option<&FunctionArgument> {
-        if let Some(parameter) = self.arguments.get(index) {
-            if parameter.name.is_none() {
-                return Some(parameter);
+        if let Some(argument) = self.arguments.get(index) {
+            if argument.name.is_none() {
+                return Some(argument);
             }
         }
         None
     }
 
     pub fn get_by_name(&self, name: &str) -> Option<&FunctionArgument> {
-        for parameter in &self.arguments {
-            if let Some(key0) = &parameter.name {
+        for argument in &self.arguments {
+            if let Some(key0) = &argument.name {
                 if key0 == name {
-                    return Some(parameter);
+                    return Some(argument);
                 }
             }
         }
@@ -62,7 +62,7 @@ impl FunctionArgumentContainer {
     pub fn try_get_by_name(&self, name: &str) -> Result<&FunctionArgument> {
         match self.get_by_name(name) {
             Some(value) => Ok(value),
-            None => bail!("Parameter '{}' not found", name),
+            None => bail!("Argument '{}' not found", name),
         }
     }
 }
@@ -114,15 +114,15 @@ impl ToTreeString for LitedownFunction {
     fn write_tree_string(&self, builder: &mut TreeStringBuilder, level: usize) {
         builder.add_node(level, format!("Function({:?})", self.name));
 
-        if !self.parameters.is_empty() {
+        if !self.arguments.is_empty() {
             builder.add_node(level + 1, "Parameter");
-            for parameter in &self.parameters.arguments {
-                match &parameter.name {
+            for argument in &self.arguments.arguments {
+                match &argument.name {
                     Some(key) => {
-                        builder.add_node(level + 2, format!("{:?} => {:?}", key, parameter.value));
+                        builder.add_node(level + 2, format!("{:?} => {:?}", key, argument.value));
                     }
                     None => {
-                        builder.add_node(level + 2, format!("{:?}", parameter.value));
+                        builder.add_node(level + 2, format!("{:?}", argument.value));
                     }
                 }
             }

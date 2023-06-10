@@ -133,10 +133,10 @@ fn parse_value_with_key(iter: &mut IndentedStringIterator) -> Result<FunctionArg
         iter.pass_whitespaces();
         let value = parse_value(iter)?;
 
-        let parameter = FunctionArgument {
+        let argument = FunctionArgument {
             name: Some(name),
             value,
         };
-        Ok(parameter)
+        Ok(argument)
     })
 }

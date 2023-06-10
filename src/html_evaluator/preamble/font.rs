@@ -17,7 +17,7 @@ pub enum FontFamily {
 pub(super) fn evaluate_font(
     function: &LitedownFunction,
 ) -> Result<(Option<FontFamily>, Option<String>)> {
-    let family = match function.parameters.get_by_name("family") {
+    let family = match function.arguments.get_by_name("family") {
         Some(family) => match family.try_into_string()?.as_str() {
             "serif" => Some(FontFamily::Serif),
             "sans-serif" => Some(FontFamily::SansSerif),
@@ -25,7 +25,7 @@ pub(super) fn evaluate_font(
         },
         None => None,
     };
-    let size = match function.parameters.get_by_name("size") {
+    let size = match function.arguments.get_by_name("size") {
         Some(size) => {
             let (number, unit) = size.try_into_float()?;
             if unit.is_empty() {

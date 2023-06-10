@@ -9,7 +9,7 @@ pub struct PageSize {
 }
 
 pub(super) fn evaluate_page_size(function: &LitedownFunction) -> Result<PageSize> {
-    match function.parameters.len() {
+    match function.arguments.len() {
         1 => {
             deconstruct_required_arguments!((size) from function);
             let size = size.try_into_string()?.to_lowercase();

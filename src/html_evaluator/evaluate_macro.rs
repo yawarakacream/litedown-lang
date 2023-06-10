@@ -1,39 +1,39 @@
 #[macro_export]
 macro_rules! deconstruct_required_arguments {
-    (($($paramname:ident),*) from $element:ident) => {
-        let parameters = &$element.parameters;
-        let mut parameter_index = 0;
+    (($($argname:ident),*) from $element:ident) => {
+        let arguments = &$element.arguments;
+        let mut argument_index = 0;
         $(
-            let $paramname = {
-                let paramname = stringify!($paramname);
-                let from_index = parameters.get_by_index(parameter_index);
-                let from_name = parameters.get_by_name(paramname);
+            let $argname = {
+                let argname = stringify!($argname);
+                let from_index = arguments.get_by_index(argument_index);
+                let from_name = arguments.get_by_name(argname);
                 if from_index.is_some() && from_name.is_some() {
                     anyhow::bail!(
                         "function '{}' got multiple values for argument '{}'",
-                        $element.name, paramname
+                        $element.name, argname
                     );
                 }
                 if from_index.is_none() && from_name.is_none() {
                     anyhow::bail!(
                         "function '{}' missing required positional argument '{}'",
-                        $element.name, paramname
+                        $element.name, argname
                     );
                 }
                 from_index.or(from_name).unwrap()
             };
-            parameter_index += 1;
+            argument_index += 1;
         )*
-        if parameters.get_by_index(parameter_index).is_some() {
-            let needed = parameter_index;
-            while parameters.get_by_index(parameter_index).is_some() {
-                parameter_index += 1;
+        if arguments.get_by_index(argument_index).is_some() {
+            let needed = argument_index;
+            while arguments.get_by_index(argument_index).is_some() {
+                argument_index += 1;
             }
             anyhow::bail!(
                 "function '{}' takes {} positional argument but {} were given",
                 $element.name,
                 needed,
-                parameter_index
+                argument_index
             );
         }
     };

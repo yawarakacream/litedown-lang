@@ -19,11 +19,11 @@ pub fn evaluate_grid(
     evaluate_litedown_function!(function;
         rows: (child_function) => {
             let mut tmp = String::new();
-            for i in 0..(child_function.parameters.len()) {
+            for i in 0..(child_function.arguments.len()) {
                 if 0 < i {
                     tmp.push_str(" ");
                 }
-                match child_function.parameters.get_by_index(i) {
+                match child_function.arguments.get_by_index(i) {
                     Some(arg) => {
                         tmp.push_str(&arg.try_into_string()?);
                     }
@@ -34,11 +34,11 @@ pub fn evaluate_grid(
         }
         columns: (child_function) => {
             let mut tmp = String::new();
-            for i in 0..(child_function.parameters.len()) {
+            for i in 0..(child_function.arguments.len()) {
                 if 0 < i {
                     tmp.push_str(" ");
                 }
-                match child_function.parameters.get_by_index(i) {
+                match child_function.arguments.get_by_index(i) {
                     Some(arg) => {
                         tmp.push_str(&arg.try_into_string()?);
                     }
@@ -49,7 +49,7 @@ pub fn evaluate_grid(
         }
         item: (child_function) => {
             // zero-indexed
-            let (row_start, row_end, column_start, column_end) = match child_function.parameters.len() {
+            let (row_start, row_end, column_start, column_end) = match child_function.arguments.len() {
                 2 => {
                     deconstruct_required_arguments!((row, column) from child_function);
                     let row = row.try_into_bare_unsigned_integer()?;

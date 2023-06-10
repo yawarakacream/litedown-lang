@@ -24,7 +24,7 @@ pub fn evaluate_list(
     evaluator: &Ld2HtmlEvaluator,
     function: &LitedownFunction,
 ) -> Result<Option<HtmlElement>> {
-    let marker = if function.parameters.is_empty() {
+    let marker = if function.arguments.is_empty() {
         Marker::Dot
     } else {
         deconstruct_required_arguments!((marker) from function);

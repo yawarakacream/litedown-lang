@@ -13,7 +13,7 @@ pub fn evaluate_image(
 
     img_html.set_attr("src", &function.body.try_get_as_string()?);
 
-    if let Some(height) = function.parameters.get_by_name("height") {
+    if let Some(height) = function.arguments.get_by_name("height") {
         let height = height.try_into_float()?;
         let height = format!("{}{}", height.0, height.1);
         img_html.set_attr("height", &height);

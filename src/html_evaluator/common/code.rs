@@ -12,12 +12,12 @@ pub fn evaluate_code(
     evaluator: &Ld2HtmlEvaluator,
     function: &LitedownFunction,
 ) -> Result<Option<HtmlElement>> {
-    let mut lang = match function.parameters.get_by_name("lang") {
+    let mut lang = match function.arguments.get_by_name("lang") {
         Some(lang) => Some(lang.try_into_string()?),
         None => None,
     };
 
-    let code = match function.parameters.get_by_name("src") {
+    let code = match function.arguments.get_by_name("src") {
         Some(src) => {
             let src = src.try_into_string()?;
             let path = if src.starts_with("/") {

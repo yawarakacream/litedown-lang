@@ -19,7 +19,7 @@ pub(crate) fn parse_function(iter: &mut IndentedStringIterator) -> Result<Litedo
             .context("The start character '@' not found")?;
 
         let name = parse_name(iter).context("Failed to parse function name")?;
-        let parameters = parse_parameter_container(iter)?;
+        let arguments = parse_argument_container(iter)?;
         let body = parse_function_body(iter, started_at_first_character)?.unwrap_or_else(|| {
             FunctionBody {
                 form: FunctionBodyForm::Inline,
@@ -29,14 +29,14 @@ pub(crate) fn parse_function(iter: &mut IndentedStringIterator) -> Result<Litedo
 
         let function = LitedownFunction {
             name,
-            parameters,
+            arguments,
             body,
         };
         Ok(function)
     })
 }
 
-pub(super) fn parse_parameter_container(
+pub(super) fn parse_argument_container(
     iter: &mut IndentedStringIterator,
 ) -> Result<FunctionArgumentContainer> {
     iter.parse(|iter| {
@@ -44,7 +44,7 @@ pub(super) fn parse_parameter_container(
             return Ok(FunctionArgumentContainer::new(Vec::new())?);
         }
 
-        let mut parameters = Vec::new();
+        let mut arguments = Vec::new();
         let mut trailing_comma_used = false;
         loop {
             iter.pass_whitespaces();
@@ -57,7 +57,7 @@ pub(super) fn parse_parameter_container(
             match parse_function_argument(iter) {
                 Ok(tmp) => {
                     iter.pass_whitespaces();
-                    parameters.push(tmp);
+                    arguments.push(tmp);
                 }
                 Err(_) => {
                     // 不正な形式の場合，そのまま文字列のパラメータと解釈する
@@ -76,7 +76,7 @@ pub(super) fn parse_parameter_container(
                         }
                         trailing_comma_used = true;
                     } else {
-                        parameters.push(FunctionArgument {
+                        arguments.push(FunctionArgument {
                             name: None,
                             value: FunctionArgumentValue::String { value },
                         })
@@ -95,7 +95,7 @@ pub(super) fn parse_parameter_container(
             }
 
             if let Ok(_) = iter.next_char_as(']') {
-                return Ok(FunctionArgumentContainer::new(parameters)?);
+                return Ok(FunctionArgumentContainer::new(arguments)?);
             }
 
             break;

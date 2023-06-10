@@ -18,7 +18,7 @@ pub fn evaluate_figure(
             caption: (child_function) => {
                 let mut figcaption_tag_html = HtmlElement::new("div");
                 figcaption_tag_html.set_attr("class", "tag");
-                if let Some(raw_tag) = child_function.parameters.get_by_name("raw_tag") {
+                if let Some(raw_tag) = child_function.arguments.get_by_name("raw_tag") {
                     let raw_tag = raw_tag.try_into_string()?;
                     figcaption_tag_html.append_text(&raw_tag);
                 } else {

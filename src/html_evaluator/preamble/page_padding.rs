@@ -9,7 +9,7 @@ pub struct PagePadding {
 }
 
 pub(super) fn evaluate_page_padding(function: &LitedownFunction) -> Result<PagePadding> {
-    match function.parameters.len() {
+    match function.arguments.len() {
         2 => {
             deconstruct_required_arguments!((horizontal, vertical) from function);
             let horizontal = horizontal.try_into_string()?.clone();

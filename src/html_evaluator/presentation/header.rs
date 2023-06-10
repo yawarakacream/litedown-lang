@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn evaluate_header(_: &Ld2HtmlEvaluator, function: &LitedownFunction) -> Result<HtmlElement> {
-    let level = if function.parameters.is_empty() {
+    let level = if function.arguments.is_empty() {
         "primary".to_string()
     } else {
         deconstruct_required_arguments!((level) from function);

@@ -26,7 +26,7 @@ pub fn evaluate_link(
 ) -> Result<Option<HtmlElement>> {
     let mut anchor_html = HtmlElement::new("a");
 
-    if function.parameters.is_empty() {
+    if function.arguments.is_empty() {
         let body = function
             .body
             .try_get_as_string()
