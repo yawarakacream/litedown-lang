@@ -26,6 +26,10 @@ pub(super) fn evaluate_page_size(function: &LitedownFunction) -> Result<PageSize
                     width: "33.867cm".to_string(),
                     height: "19.05cm".to_string(),
                 }),
+                "powerpoint-4:3" => Ok(PageSize {
+                    width: "25.4cm".to_string(),
+                    height: "19.05cm".to_string(),
+                }),
                 _ => bail!("unknown built-in size"),
             }
         }
