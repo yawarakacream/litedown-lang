@@ -16,23 +16,32 @@ pub fn evaluate_figure(
     evaluate_with_ld2html_evaluator!(function to figure_html with evaluator;
         function: {
             caption: (child_function) => {
-                let mut figcaption_tag_html = HtmlElement::new("div");
-                figcaption_tag_html.set_attr("class", "tag");
-                if let Some(raw_tag) = child_function.arguments.get_by_name("raw_tag") {
-                    let raw_tag = raw_tag.try_into_string()?;
-                    figcaption_tag_html.append_text(&raw_tag);
-                } else {
-                    bail!("no tag found");
-                }
-
-                let mut figcaption_content_html = HtmlElement::new("div");
-                figcaption_content_html.set_attr("class", "content");
-                evaluate_with_ld2html_evaluator!(child_function to figcaption_content_html with evaluator);
-
                 figcaption_html = {
                     let mut figcaption_html = HtmlElement::new("figcaption");
-                    figcaption_html.append(figcaption_tag_html);
-                    figcaption_html.append(figcaption_content_html);
+
+                    figcaption_html.append({
+                        let mut figcaption_tag_html = HtmlElement::new("div");
+                        if let Some(raw_tag) = child_function.arguments.get_by_name("raw_tag") {
+                            let raw_tag = raw_tag.try_into_string()?;
+                            figcaption_tag_html.append_text(&raw_tag);
+                        } else {
+                            bail!("no tag found");
+                        }
+
+                        figcaption_tag_html
+                    });
+
+                    if !child_function.body.is_empty() {
+                        figcaption_html.append_text("：");
+                        figcaption_html.append({
+                            let mut figcaption_content_html = HtmlElement::new("div");
+                            figcaption_content_html.set_attr("class", "content");
+                            evaluate_with_ld2html_evaluator!(child_function to figcaption_content_html with evaluator);
+
+                            figcaption_content_html
+                        });
+                    }
+
                     Some(figcaption_html)
                 }
             }
