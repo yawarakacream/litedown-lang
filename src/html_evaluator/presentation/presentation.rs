@@ -3,8 +3,9 @@ use anyhow::{bail, Result};
 use crate::{
     evaluate_litedown_function, evaluate_with_ld2html_evaluator,
     html_evaluator::{
-        litedown::Ld2HtmlEvaluator, preamble::preamble::Preamble,
-        presentation::header::evaluate_header,
+        litedown::Ld2HtmlEvaluator,
+        preamble::preamble::Preamble,
+        presentation::{footer::evaluate_footer, header::evaluate_header},
     },
     tree::function::LitedownFunction,
     utility::html::HtmlElement,
@@ -74,16 +75,28 @@ pub fn evaluate_presentation(
 
     evaluate_litedown_function!(function;
         slide: (child_function) => {
-            let mut slide_wrapper_html = HtmlElement::new("div");
-            slide_wrapper_html.set_attr("class", "slide-wrapper");
-            slide_wrapper_html.append(evaluate_slide(evaluator, child_function)?);
-            body.append(slide_wrapper_html);
+            body.append({
+                let mut slide_wrapper_html = HtmlElement::new("div");
+                slide_wrapper_html.set_attr("class", "slide-wrapper");
+
+                let pdf = match child_function.arguments.get_by_name("pdf") {
+                    Some(show) => show.try_into_boolean()?,
+                    None => true,
+                };
+                slide_wrapper_html.set_attr("data-pdf", &pdf.to_string());
+
+                slide_wrapper_html.append(evaluate_slide(evaluator, child_function)?);
+
+                slide_wrapper_html
+            });
         }
         title: (child_function) => {
-            let mut slide_wrapper_html = HtmlElement::new("div");
-            slide_wrapper_html.set_attr("class", "slide-wrapper");
-            slide_wrapper_html.append(evaluate_title(evaluator, child_function)?);
-            body.append(slide_wrapper_html);
+            body.append({
+                let mut slide_wrapper_html = HtmlElement::new("div");
+                slide_wrapper_html.set_attr("class", "slide-wrapper");
+                slide_wrapper_html.append(evaluate_title(evaluator, child_function)?);
+                slide_wrapper_html
+            });
         }
     );
 
@@ -101,8 +114,11 @@ fn evaluate_slide(
 
     evaluate_with_ld2html_evaluator!(function to slide_html with evaluator;
         function: {
-            header: (function) => {
-                slide_html.append(evaluate_header(evaluator, function)?);
+            header: (child_function) => {
+                slide_html.append(evaluate_header(evaluator, child_function)?);
+            }
+            footer: (child_function) => {
+                slide_html.append(evaluate_footer(evaluator, child_function)?);
             }
         }
     );
