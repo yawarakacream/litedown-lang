@@ -30,7 +30,7 @@ fn parse_value(iter: &mut IndentedStringIterator) -> Result<FunctionArgumentValu
             }
 
             while let Some(c) = iter.next_char() {
-                if c == '.' {
+                if !number.is_empty() && c == '.' {
                     if has_point {
                         bail!("'.' is allowed only once");
                     }
@@ -68,6 +68,18 @@ fn parse_value(iter: &mut IndentedStringIterator) -> Result<FunctionArgumentValu
                     unit,
                 })
             }
+        })
+    }
+
+    fn parse_boolean(iter: &mut IndentedStringIterator) -> Result<FunctionArgumentValue> {
+        iter.parse(|iter| {
+            if let Ok(_) = iter.next_str_as("true") {
+                return Ok(FunctionArgumentValue::Boolean { value: true });
+            }
+            if let Ok(_) = iter.next_str_as("false") {
+                return Ok(FunctionArgumentValue::Boolean { value: false });
+            }
+            bail!("expected 'true' or 'false'");
         })
     }
 
@@ -121,6 +133,7 @@ fn parse_value(iter: &mut IndentedStringIterator) -> Result<FunctionArgumentValu
     }
 
     parse_number(iter)
+        .or_else(|_| parse_boolean(iter))
         .or_else(|_| parse_string(iter))
         .or_else(|_| parse_array(iter))
 }

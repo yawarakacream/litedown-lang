@@ -216,6 +216,15 @@ impl IndentedStringIterator {
         }
     }
 
+    pub fn next_str_as<'a>(&mut self, str: &'a str) -> Result<&'a str> {
+        self.parse(|iter| {
+            for c in str.chars() {
+                iter.next_char_as(c)?;
+            }
+            Ok(str)
+        })
+    }
+
     pub fn collect_until_line_ending(&mut self) -> String {
         let mut ret = String::new();
         while let Some(c) = self.next_char() {

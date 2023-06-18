@@ -4,23 +4,27 @@ use anyhow::{bail, Result};
 
 #[derive(Debug)]
 pub enum FunctionArgumentValue {
-    String { value: String },
     Integer { number: isize, unit: String },
     Float { number: f64, unit: String },
+    Boolean { value: bool },
+    String { value: String },
     Array { value: Vec<FunctionArgumentValue> },
 }
 
 impl fmt::Display for FunctionArgumentValue {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            FunctionArgumentValue::String { value } => {
-                write!(formatter, "{}", value)
-            }
             FunctionArgumentValue::Integer { number, unit } => {
                 write!(formatter, "{}{}", number, unit)
             }
             FunctionArgumentValue::Float { number, unit } => {
                 write!(formatter, "{}{}", number, unit)
+            }
+            FunctionArgumentValue::Boolean { value } => {
+                write!(formatter, "{}", value)
+            }
+            FunctionArgumentValue::String { value } => {
+                write!(formatter, "{}", value)
             }
             FunctionArgumentValue::Array { value } => {
                 write!(formatter, "[")?;
@@ -45,10 +49,6 @@ pub struct FunctionArgument {
 }
 
 impl FunctionArgument {
-    pub fn try_into_string(&self) -> Result<String> {
-        Ok(format!("{}", self.value))
-    }
-
     pub fn try_into_integer(&self) -> Result<(isize, &String)> {
         if let FunctionArgumentValue::Integer { number, unit } = &self.value {
             return Ok((*number, unit));
@@ -95,6 +95,17 @@ impl FunctionArgument {
             }
         }
         bail!("invalid argument: {} is not bare Float", self.value);
+    }
+
+    pub fn try_into_boolean(&self) -> Result<bool> {
+        if let FunctionArgumentValue::Boolean { value } = &self.value {
+            return Ok(*value);
+        }
+        bail!("invalid argument: {} is not bare Boolean", self.value);
+    }
+
+    pub fn try_into_string(&self) -> Result<String> {
+        Ok(format!("{}", self.value))
     }
 
     pub fn try_into_array(&self) -> Result<&Vec<FunctionArgumentValue>> {
