@@ -15,7 +15,7 @@ use crate::{
 use super::{
     common::{
         code::evaluate_code,
-        decorators::{evaluate_divider, evaluate_link, evaluate_strong},
+        decorators::{evaluate_attention, evaluate_divider, evaluate_link, evaluate_strong},
         figure::evaluate_figure,
         grid::evaluate_grid,
         image::evaluate_image,
@@ -36,6 +36,7 @@ impl ContentMode {
         let mut function_evaluators: HashMap<String, Ld2HtmlFunctionEvaluator> = HashMap::new();
         function_evaluators.insert("math".to_string(), evaluate_math);
         function_evaluators.insert("strong".to_string(), evaluate_strong);
+        function_evaluators.insert("attention".to_string(), evaluate_attention);
         function_evaluators.insert("list".to_string(), evaluate_list);
         function_evaluators.insert("figure".to_string(), evaluate_figure);
         function_evaluators.insert("image".to_string(), evaluate_image);

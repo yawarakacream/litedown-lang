@@ -15,6 +15,16 @@ pub fn evaluate_strong(
     Ok(Some(strong_html))
 }
 
+pub fn evaluate_attention(
+    evaluator: &Ld2HtmlEvaluator,
+    function: &LitedownFunction,
+) -> Result<Option<HtmlElement>> {
+    let mut attention_html = HtmlElement::new("span");
+    attention_html.set_attr("class", "attention");
+    evaluate_with_ld2html_evaluator!(function to attention_html with evaluator);
+    Ok(Some(attention_html))
+}
+
 pub fn evaluate_divider(_: &Ld2HtmlEvaluator, _: &LitedownFunction) -> Result<Option<HtmlElement>> {
     let hr = HtmlElement::new_void("hr");
     Ok(Some(hr))
