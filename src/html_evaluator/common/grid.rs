@@ -15,6 +15,7 @@ pub fn evaluate_grid(
 
     let mut rows_style = "grid-auto-rows: 1fr".to_string();
     let mut columns_style = "grid-auto-columns: 1fr".to_string();
+    let mut gap_style = None;
 
     evaluate_litedown_function!(function;
         rows: (child_function) => {
@@ -47,6 +48,16 @@ pub fn evaluate_grid(
             }
             columns_style = format!("grid-template-columns: {}", tmp);
         }
+        gap: (child_function) => {
+            let gap = match child_function.arguments.len() {
+                1 => {
+                    deconstruct_required_arguments!((gap) from child_function);
+                    gap
+                }
+                _ => bail!("Invalid argument"),
+            };
+            gap_style = Some(format!("gap: {}", gap.try_into_string()?));
+        }
         item: (child_function) => {
             // zero-indexed
             let (row_start, row_end, column_start, column_end) = match child_function.arguments.len() {
@@ -78,7 +89,16 @@ pub fn evaluate_grid(
         }
     );
 
-    container_html.set_attr("style", &format!("{}; {}", rows_style, columns_style));
+    let mut style = String::new();
+    style.push_str(&rows_style);
+    style.push(';');
+    style.push_str(&columns_style);
+    style.push(';');
+    if let Some(gap_style) = &gap_style {
+        style.push_str(&gap_style);
+        style.push(';');
+    }
+    container_html.set_attr("style", &style);
 
     Ok(Some(container_html))
 }
