@@ -10,6 +10,20 @@ body {
   print-color-adjust: exact !important;
 }
 
+.basic-margin {
+  & > * {
+    margin: 1em 0;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
 img {
   max-width: 100%;
   object-fit: contain;
@@ -21,6 +35,10 @@ p {
 
 a {
   text-decoration: none;
+
+  &:visited {
+    color: inherit;
+  }
 }
 
 strong {
@@ -57,6 +75,11 @@ figure {
   align-items: center;
   justify-content: center;
   flex-direction: column;
+
+  .content {
+    .basic-margin;
+    margin: 0;
+  }
 
   figcaption {
     width: 100%;
@@ -122,4 +145,19 @@ hr {
 
 .grid {
   display: grid;
+
+  & > .item {
+    & > * {
+      margin: 0;
+    }
+  }
+}
+
+// katex
+.display-math {
+  margin: 1em 0;
+
+  & > .katex-display {
+    margin: 0;
+  }
 }

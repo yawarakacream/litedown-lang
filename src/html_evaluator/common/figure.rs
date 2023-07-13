@@ -9,11 +9,12 @@ pub fn evaluate_figure(
     evaluator: &Ld2HtmlEvaluator,
     function: &LitedownFunction,
 ) -> Result<Option<HtmlElement>> {
-    let mut figure_html = HtmlElement::new("figure");
+    let mut figure_content_html = HtmlElement::new("div");
+    figure_content_html.set_attr("class", "content");
 
     let mut figcaption_html = None;
 
-    evaluate_with_ld2html_evaluator!(function to figure_html with evaluator;
+    evaluate_with_ld2html_evaluator!(function to figure_content_html with evaluator;
         function: {
             caption: (child_function) => {
                 figcaption_html = {
@@ -48,12 +49,14 @@ pub fn evaluate_figure(
         }
     );
 
-    let figcaption_html = match figcaption_html {
-        Some(figcaption_html) => figcaption_html,
+    let mut figure_html = HtmlElement::new("figure");
+
+    figure_html.append(figure_content_html);
+
+    match figcaption_html {
+        Some(figcaption_html) => figure_html.append(figcaption_html),
         None => bail!("no caption found"),
     };
-
-    figure_html.append(figcaption_html);
 
     Ok(Some(figure_html))
 }

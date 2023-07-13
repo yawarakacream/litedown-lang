@@ -73,6 +73,8 @@ pub fn evaluate_presentation(
     let mut body = HtmlElement::new("div");
     body.set_attr("class", "presentation");
 
+    let mut slide_index = 0;
+
     evaluate_litedown_function!(function;
         slide: (child_function) => {
             body.append({
@@ -84,6 +86,15 @@ pub fn evaluate_presentation(
                     None => true,
                 };
                 slide_wrapper_html.set_attr("data-pdf", &pdf.to_string());
+                if pdf {
+                    slide_wrapper_html.append({
+                        let mut slide_index_html = HtmlElement::new("span");
+                        slide_index_html.set_attr("class", "slide-index");
+                        slide_index_html.append_text(&(slide_index + 1).to_string());
+                        slide_index += 1;
+                        slide_index_html
+                    });
+                }
 
                 slide_wrapper_html.append(evaluate_slide(evaluator, child_function)?);
 

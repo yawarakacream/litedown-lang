@@ -18,6 +18,7 @@
   }
 
   & > .slide-wrapper {
+    position: relative;
     display: block;
     break-after: page;
     overflow: hidden;
@@ -28,6 +29,15 @@
       @media print {
         display: none;
       }
+    }
+
+    & > .slide-index {
+      position: absolute;
+      right: 0.5rem;
+      bottom: 0.5rem;
+      font-size: 1rem;
+      line-height: 1;
+      color: darkgray;
     }
 
     & > .slide {
@@ -53,6 +63,7 @@
           position: absolute;
           bottom: 2em;
           font-size: 1em;
+          text-align: center;
         }
       }
 
@@ -89,17 +100,24 @@
         box-sizing: border-box;
         border-top: 1px solid gray;
         font-size: 0.8rem;
+
+        & > *:first-child {
+          margin-top: 0;
+        }
+
+        & > *:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      & > *:first-child {
+        margin-top: 0;
+      }
+
+      & > *:last-child {
+        margin-bottom: 0;
       }
     }
-  }
-}
-
-p {
-  &:first-of-type {
-    margin-top: 0;
-  }
-  &:last-of-type {
-    margin-bottom: 0;
   }
 }
 

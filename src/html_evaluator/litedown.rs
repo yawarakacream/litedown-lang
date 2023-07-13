@@ -24,6 +24,7 @@ use super::{
     },
     document::pagebreak::evaluate_pagebreak,
     preamble::{font::FontFamily, preamble::Preamble, theme::Theme},
+    presentation::absolute_block::evaluate_absolute_block,
 };
 
 enum ContentMode {
@@ -49,7 +50,9 @@ impl ContentMode {
             ContentMode::Document => {
                 function_evaluators.insert("pagebreak".to_string(), evaluate_pagebreak);
             }
-            ContentMode::Presentation => {}
+            ContentMode::Presentation => {
+                function_evaluators.insert("absolute".to_string(), evaluate_absolute_block);
+            }
         }
 
         function_evaluators
@@ -302,7 +305,7 @@ impl Ld2HtmlEvaluator {
                                 font-family: litedown-math;
                                 src: url("https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/fonts/KaTeX_Main-Regular.woff2") format("woff2");
                                 unicode-range: U+0030-0039;
-                                size-adjust: 121%;
+                                size-adjust: 112%;
                             }}
                             body {{
                                 font-family: litedown-math, var(--main-font-family);
@@ -377,7 +380,7 @@ impl Ld2HtmlEvaluator {
                                 font-family: litedown-math;
                                 src: url("https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/output/chtml/fonts/woff-v2/MathJax_Main-Regular.woff") format("woff");
                                 unicode-range: U+0030-0039;
-                                size-adjust: 121%;
+                                size-adjust: 112%;
                             }}
                             body {{
                                 font-family: litedown-math, var(--main-font-family);
