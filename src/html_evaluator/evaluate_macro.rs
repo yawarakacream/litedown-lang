@@ -46,23 +46,23 @@ macro_rules! evaluate_with_ld2html_evaluator {
     ) => {
         for passage in &$function.body.value {
             let mut passage_html = match $function.body.form {
-                crate::tree::function::FunctionBodyForm::Block => HtmlElement::new("p"),
-                crate::tree::function::FunctionBodyForm::Inline => HtmlElement::new("span"),
+                $crate::tree::function::FunctionBodyForm::Block => HtmlElement::new("p"),
+                $crate::tree::function::FunctionBodyForm::Inline => HtmlElement::new("span"),
             };
 
             for passage_element in &passage.elements {
                 match &passage_element {
-                    crate::tree::function::PassageElement::String(string) => {
+                    $crate::tree::function::PassageElement::String(string) => {
                         passage_html.append_text(&string);
                     }
 
-                    crate::tree::function::PassageElement::Function(child_function) => {
-                        if child_function.body.form == crate::tree::function::FunctionBodyForm::Block {
+                    $crate::tree::function::PassageElement::Function(child_function) => {
+                        if child_function.body.form == $crate::tree::function::FunctionBodyForm::Block {
                             if !passage_html.is_child_empty() {
                                 $html_element.append(passage_html);
                                 passage_html = match $function.body.form {
-                                    crate::tree::function::FunctionBodyForm::Block => HtmlElement::new("p"),
-                                    crate::tree::function::FunctionBodyForm::Inline => HtmlElement::new("span"),
+                                    $crate::tree::function::FunctionBodyForm::Block => HtmlElement::new("p"),
+                                    $crate::tree::function::FunctionBodyForm::Inline => HtmlElement::new("span"),
                                 };
                             }
                         }
@@ -77,10 +77,10 @@ macro_rules! evaluate_with_ld2html_evaluator {
                                 let evaluated = $evaluator.evaluate_main_function(child_function)?;
                                 if let Some(evaluated) = evaluated {
                                     match &child_function.body.form {
-                                        crate::tree::function::FunctionBodyForm::Block => {
+                                        $crate::tree::function::FunctionBodyForm::Block => {
                                             $html_element.append(evaluated);
                                         }
-                                        crate::tree::function::FunctionBodyForm::Inline => {
+                                        $crate::tree::function::FunctionBodyForm::Inline => {
                                             passage_html.append(evaluated);
                                         }
                                     }
@@ -111,13 +111,13 @@ macro_rules! evaluate_litedown_function {
         for passage in &$function.body.value {
             for passage_element in &passage.elements {
                 match &passage_element {
-                    crate::tree::function::PassageElement::String(string) => {
-                        if !crate::utility::whitespace::is_blank(string) {
+                    $crate::tree::function::PassageElement::String(string) => {
+                        if !$crate::utility::whitespace::is_blank(string) {
                             anyhow::bail!("cannot write string in function '{}'", $function.name);
                         }
                     }
 
-                    crate::tree::function::PassageElement::Function(child_function) => {
+                    $crate::tree::function::PassageElement::Function(child_function) => {
                         match child_function.name.as_str() {
                             $(
                                 stringify!($func_name) => {
