@@ -1,8 +1,9 @@
 use std::fmt;
 
 use anyhow::{bail, Result};
+use serde::Serialize;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum FunctionArgumentValue {
     Integer { number: isize, unit: String },
     Float { number: f64, unit: String },
@@ -42,7 +43,7 @@ impl fmt::Display for FunctionArgumentValue {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct FunctionArgument {
     pub name: Option<String>,
     pub value: FunctionArgumentValue,
