@@ -10,7 +10,9 @@ use anyhow::{bail, Context, Result};
 use litedown_lang::{
     html_evaluator::litedown::{evaluate_litedown_to_html, Ld2HtmlInput},
     parser::litedown::parse_litedown,
-    utility::{html::print_html_to_pdf, tree_string_builder::ToTreeString},
+    utility::{
+        git::get_current_git_version, html::print_html_to_pdf, tree_string_builder::ToTreeString,
+    },
 };
 
 struct Argument<'a> {
@@ -72,14 +74,21 @@ fn main() -> Result<()> {
     println!("Parsing {:?}", source_path);
     let ast = parse_litedown(&source_code).context("Could not parse ld")?;
 
+    let output_ast_path = source_path.with_extension("ldast.txt");
+    println!("Saving ast to {:?}", output_ast_path);
+
     let ast_string = ast.to_tree_string();
     if ast_string.lines().count() < 16 {
         println!("{}", ast.to_tree_string());
-    } else {
-        let output_ast_path = source_path.with_extension("ldast.txt");
-        println!("Saving ast to {:?}", output_ast_path);
-
+    }
+    {
         let mut output_ast = File::create(&output_ast_path).unwrap();
+        writeln!(
+            output_ast,
+            "litedown-lang version: {} (git hash)",
+            get_current_git_version()?
+        )
+        .unwrap();
         writeln!(output_ast, "{}", ast_string).unwrap();
         output_ast.flush().unwrap();
     }
