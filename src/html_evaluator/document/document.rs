@@ -74,8 +74,15 @@ pub fn evaluate_document(
                 section_html.append({
                     let mut header_html = HtmlElement::new("div");
                     header_html.set_attr("class", "header");
-                    header_html.append_text(&format!("{}.", section_index));
-                    section_index += 1;
+
+                    if let Some(raw_tag) = child_function.arguments.get_by_name("raw_tag") {
+                        let raw_tag = raw_tag.try_into_string()?;
+                        header_html.append_text(&raw_tag);
+                    } else {
+                        header_html.append_text(&format!("{}.", section_index));
+                        section_index += 1;
+                    }
+
                     header_html
                 });
                 evaluate_with_ld2html_evaluator!(child_function to section_html with evaluator);
