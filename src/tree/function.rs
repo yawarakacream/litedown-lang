@@ -5,14 +5,14 @@ use crate::utility::tree_string_builder::{ToTreeString, TreeStringBuilder};
 
 use super::function_argument::FunctionArgument;
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct LitedownFunction {
     pub name: String,
     pub arguments: FunctionArgumentContainer,
     pub body: FunctionBody,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct FunctionArgumentContainer {
     arguments: Vec<FunctionArgument>,
 }
@@ -68,13 +68,13 @@ impl FunctionArgumentContainer {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
 pub enum FunctionBodyForm {
     Inline,
     Block,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct FunctionBody {
     pub form: FunctionBodyForm,
     pub value: Vec<LitedownPassage>,
@@ -99,12 +99,12 @@ impl FunctionBody {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct LitedownPassage {
     pub elements: Vec<PassageElement>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 // #[serde(tag = "struct")]
 pub enum PassageElement {
     String(String),
