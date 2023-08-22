@@ -69,6 +69,7 @@ impl FunctionArgumentContainer {
 }
 
 #[derive(Clone, Debug, Serialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum FunctionBodyForm {
     Inline,
     Block,
@@ -105,7 +106,8 @@ pub struct LitedownPassage {
 }
 
 #[derive(Clone, Debug, Serialize)]
-// #[serde(tag = "struct")]
+#[serde(tag = "structure")]
+#[serde(rename_all = "snake_case")]
 pub enum PassageElement {
     String(String),
     Function(LitedownFunction),
