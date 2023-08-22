@@ -4,7 +4,7 @@ use anyhow::{bail, Result};
 use serde::Serialize;
 
 #[derive(Clone, Debug, Serialize)]
-#[serde(tag = "structure")]
+#[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum FunctionArgumentValue {
     Integer { number: isize, unit: String },

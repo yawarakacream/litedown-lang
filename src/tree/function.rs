@@ -106,7 +106,7 @@ pub struct LitedownPassage {
 }
 
 #[derive(Clone, Debug, Serialize)]
-#[serde(tag = "structure")]
+#[serde(tag = "type", content = "value")]
 #[serde(rename_all = "snake_case")]
 pub enum PassageElement {
     String(String),
